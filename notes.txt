@@ -33,3 +33,11 @@ on_delete_message - `for threat in message.channel.threads`
             -> instant lookup as opposed to looping through each time
 
             -> would require additional bot.events to keep up to date
+
+
+- Have the bot create a youtube and spotify playlist with the shared music in it
+    -> makes it easier to go through multiple songs
+    -> potentially upload a shared file to youtube (unlisted) and add it to the playlist
+
+- Keep track of songs already posted 
+    -> let user know if they posted a song that has already been shared, with a link to that message

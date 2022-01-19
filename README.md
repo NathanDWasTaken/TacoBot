@@ -22,9 +22,9 @@ You'll have to create your own bot as well as discord test server in order to su
 Next you need to create a `api_key.env` file with the following variables:
 ```
 # Having 2 seperate bots, one that is used and another for testing is helpful because it allows us to work on the bot while the actual bot is still online.
-DISCORD_API_KEY         = # The discord bot's api key, is used when testing is set tp False in config.py
-DISCORD_API_KEY_TEST    = # The test bot's api key, is used when testing is set to True in config.py
+DISCORD_API_KEY         = "your-api-key"            # The discord bot's api key, is used when testing is set tp False in config.py
+DISCORD_API_KEY_TEST    = "your-test-pi-key"        # The test bot's api key, is used when testing is set to True in config.py
 
-SPOTIFY_API_CLIENT_ID   = # Spotify app client ID
-SPOTIFY_API_KEY         = # Spotify appclient secret
+SPOTIFY_API_CLIENT_ID   = "your-spotify-client-id"  # Spotify app client ID
+SPOTIFY_API_KEY         = "your-spotify-api-key"    # Spotify appclient secret
 ```

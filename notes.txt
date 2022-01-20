@@ -24,9 +24,8 @@ allows for removal of the second return in is_valid_share_message
 
 
 
-on_delete_message - `for threat in message.channel.threads` 
-    -> might become an issue 
-    -> there will be an increasing amount of threads
+main.py - on_delete_message - `for threat in message.channel.threads` 
+    -> might become an issue since there will be an ever increasing amount of threads
     
     -> create Channel object
         -> stores all threads in dict

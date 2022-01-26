@@ -17,19 +17,43 @@ turn ShareMessageType vars into classes:
             - InvalidWebsite
             - InvalidShareMessage   #non-music message
 
-
 ^
 allows for removal of the second return in is_valid_share_message 
 (second return is a wildcard, could be aything depending on the case)
 
 
 
-on_delete_message - `for threat in message.channel.threads` 
-    -> might become an issue 
-    -> there will be an increasing amount of threads
+
+create channel classes with different types of moderation 
+- ThreadChannel:
+    channel that creates a thread for each message sent if condition is met (condition is class method)
+    -> the default condition method is nothing  -> no special conditon, allows any message (the channel should have a timer for sending messages)
+- ShareMedia (subclass of ThreadChannel)        -> condition is only allowing links or attachments
+- ShareSuggestion (subclass of ThreadChannel)   -> condition not allowing any links or attachments
+
+
+
+
+main.py - on_delete_message - `for threat in message.channel.threads` 
+    -> might become an issue since there will be an ever increasing amount of threads
     
     -> create Channel object
         -> stores all threads in dict
             -> instant lookup as opposed to looping through each time
 
             -> would require additional bot.events to keep up to date
+
+
+
+
+
+- Have the bot create a youtube and spotify playlist with the shared music in it
+    -> makes it easier to go through multiple songs
+    -> potentially upload a shared file to youtube (unlisted) and add it to the playlist
+
+
+
+
+
+- Keep track of songs already posted 
+    -> let user know if they posted a song that has already been shared, with a link to that message

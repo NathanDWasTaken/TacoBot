@@ -5,7 +5,7 @@ from discord.ext    import commands
 
 from pytube         import YouTube
 
-from misc           import ShareMessageType, get_api_key, get_spotify_title, is_valid_share_message, temporary_reply
+from misc           import MessageType, ValidityType, WebsiteType, get_api_key, get_spotify_title, is_valid_share_message, temporary_reply, invalid_messages
 import config
 
 
@@ -13,6 +13,8 @@ previous_message_time = time.time()
 
 
 bot     = commands.Bot(command_prefix=config.command_prefix)
+
+
 
 async def scold_user(message: Message, reply_text, delete=True):
     """
@@ -37,23 +39,28 @@ async def moderate_share(message: Message):
     moderate the share channel
     """
 
-    is_valid, r = await is_valid_share_message(message)
+    share_msg = await is_valid_share_message(message)
 
-    if is_valid in {ShareMessageType.YT, ShareMessageType.SPOTIFY}:
-        url = r
 
-        title = None
+    if share_msg.validity != ValidityType.Valid:
+        # Don't delete message if it's a website, maybe it's soundcloud?
+        delete_msg = share_msg.validity != ValidityType.InvalidWebsite
+        await scold_user(message, invalid_messages[share_msg.validity], delete_msg)
+        return
+
+
+
+    if share_msg.message_type == MessageType.Url:
+        title   = None
+        url     = share_msg.url
+
 
         try:
-            if is_valid == ShareMessageType.YT:
+            if share_msg.website == WebsiteType.YouTube:
                 title = YouTube(url).title
 
-            elif is_valid == ShareMessageType.SPOTIFY:
+            elif share_msg.website == WebsiteType.Spotify:
                 title = await get_spotify_title(url)
-
-            else:
-                await temporary_reply(message, "I currently only support Youtube, Spotify or Attached songs", delete_delay=config.delete_delay + 3)
-                return
 
 
             if len(title) > 100:
@@ -61,27 +68,22 @@ async def moderate_share(message: Message):
 
             await message.create_thread(name=title)
 
+
         except Exception as e:
             print("Could not find valid song title!")
-            print("Message sent:")
+            print("Message received from user:")
             print(message.clean_content)
             print("\n")
-            await temporary_reply(message, "Something went wrong getting the song title, you most likely didn't send a valid song!", delete_delay=config.delete_delay + 3)
+            await temporary_reply(message, f"Something went wrong getting the song title from {share_msg.website.value}. \nYou most likely didn't send a valid song!", delete_delay=config.delete_delay + 2)
 
-    elif is_valid == ShareMessageType.FILE:
-        attachment = r
+
+    elif share_msg.message_type == MessageType.File:
         # remove filetype from filename and replace underscores with spaces
-        attachment_name = attachment.filename.replace("_", " ")
+        attachment_name = share_msg.attachment.filename.replace("_", " ")
         thread_title    = ".".join(attachment_name.split(".")[:-1])
 
         await message.create_thread(name=thread_title)
 
-    elif is_valid in {ShareMessageType.INVALID, ShareMessageType.INVALID_FILE_TYPE, ShareMessageType.INVALID_WEBSITE}:
-        text = r
-        # if it's an invalid website then we don't delete the message, since it could be an API failure
-        delete = is_valid != ShareMessageType.INVALID_WEBSITE
-
-        await scold_user(message, text, delete)
 
 
 
@@ -114,10 +116,10 @@ async def on_message_delete(message: Message):
         return
     
     if message.channel.id == config.share_channel_ids[server_id]:
-        is_valid, _ = await is_valid_share_message(message)
+        share_msg = await is_valid_share_message(message)
 
         # if the message is not a valid share message that means it doesn't have a thread
-        if not is_valid.value:
+        if share_msg.validity != ValidityType.Valid:
             return
 
         for thread in message.channel.threads:

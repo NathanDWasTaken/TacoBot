@@ -1,29 +1,3 @@
-turn ShareMessageType vars into classes:
-    - ShareURL:
-        - attributes:
-            - url
-
-        - subclasses:
-            - ShareYT
-            - ShareSpotify
-
-    - ShareAttachment:
-        - attributes:
-            - attachment
-
-    - Invalid:
-        - subclasses:
-            - InvalidFileType
-            - InvalidWebsite
-            - InvalidShareMessage   #non-music message
-
-^
-allows for removal of the second return in is_valid_share_message 
-(second return is a wildcard, could be aything depending on the case)
-
-
-
-
 create channel classes with different types of moderation 
 - ThreadChannel:
     channel that creates a thread for each message sent if condition is met (condition is class method)
@@ -57,3 +31,25 @@ main.py - on_delete_message - `for threat in message.channel.threads`
 
 - Keep track of songs already posted 
     -> let user know if they posted a song that has already been shared, with a link to that message
+
+
+
+- Think of a way to automate testing
+    - How do we test? Do we check whether all messages have threads?
+        - There is no on_create_thread func
+        - How do we get it to wait so we can see if that test was successful (creating thread, deleting message, ...)
+
+
+    - Have the test bot do it?
+        - The check where we make sure a message isn't from the bot itself would cause issues
+
+    - create a third bot which does this?
+        - annoying
+        - benefit: could use entirely different code, wouldn't have to be in main.py
+
+    - Have the main bot do it?
+        - would already be running -> no need to 
+        - problems
+            - automated testing would have to be written in same program as the main bot
+            - would need both bots in the same server -> both would try to moderate it, potentially reacting to each other's messages
+        - would have to add additional checks for what server message is in as well as what mode (config.testing) it's in

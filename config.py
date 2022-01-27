@@ -12,27 +12,18 @@ testing = True
 # Key:      discord server ID
 # Value:    share-music channel ID
 share_channel_ids = {
+    # Main discord server
     924350783892389939 : 924352019026833498,
+    # Test discord server
     927704499194310717 : 927704530903261265
 }
 
 
 command_prefix  = "$"
-delete_delay    = 3
+delete_delay    = 5
 
 
 
 # ---------------------------- API STUFF ----------------------------
-youtube_domains = {
-    "youtu.be",
-    "youtube.com"
-    }
-
-spotify_domains = {
-    "open.spotify.com",
-    "spotify.com"
-}
-
-
 spotify_client_id   = os.getenv("SPOTIFY_API_CLIENT_ID")
 spotify_key         = os.getenv("SPOTIFY_API_KEY")

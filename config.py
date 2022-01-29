@@ -1,22 +1,17 @@
 import os
 from dotenv import load_dotenv
 
+
+# Load api_key.env
 file_folder = os.path.split(__file__)[0]
 env_file    = os.path.join(file_folder, "api_key.env")
 load_dotenv(env_file)
 
 
 
+
 testing = True
 
-# Key:      discord server ID
-# Value:    share-music channel ID
-share_channel_ids = {
-    # Main discord server
-    924350783892389939 : 924352019026833498,
-    # Test discord server
-    927704499194310717 : 927704530903261265
-}
 
 
 command_prefix  = "$"

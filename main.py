@@ -1,6 +1,6 @@
 from typing import Dict
 
-from discord        import Message, Thread
+from discord        import Message, TextChannel, Thread
 from discord.ext    import commands
 
 
@@ -10,18 +10,37 @@ import config
 
 
 
+def test_bot():
+    """
+    Run an automated test of the bot in the channel
+    """
+    # TODO
+    pass
 
-bot     = commands.Bot(command_prefix=config.command_prefix)
+
+def handle_command(message: Message):
+    text = message.clean_content.replace(config.command_prefix, "")
+
+    command = text.split()[0]
+    if command == "test":
+        if message.guild.id == config.test_server_id:
+            test_bot()
+
+
+    # send back Invalid command message
 
 
 
+# Create all ThreadChannel Instances
 thread_channels: Dict[int, ThreadChannel] = {}
 for channel_list in thread_channels_per_server.values():
     for channel in channel_list:
+        channel: TextChannel
         thread_channels[channel.id] = channel
 
 
 
+bot     = commands.Bot(command_prefix=config.command_prefix)
     
 @bot.event
 async def on_ready():
@@ -33,6 +52,12 @@ async def on_ready():
 async def on_message(message: Message):
     if message.author == bot.user:
         return
+
+
+    if message.clean_content.startswith(config.command_prefix):
+        handle_command(message)
+        return
+
 
     if message.channel.id not in thread_channels:
         return

@@ -1,36 +1,81 @@
-import os, spotipy, time
+import os, time, json
 
-
-from discord.message    import Message
+import spotipy
 from spotipy.oauth2     import SpotifyClientCredentials
+from discord.message    import Message
 
 
 import config
 
 
+# ---------------------------------- JSON ----------------------------------
+
+
+def load_json(filename, default_return={}):
+	try:
+		with open(filename, "r") as file:
+			return json.load(file)
+	except (FileNotFoundError, json.decoder.JSONDecodeError):
+		try:
+			raise default_return
+		except TypeError:
+			return default_return
+
+
+
+def save_json(filename, data):
+	path = os.path.split(filename)[0]
+
+	if not os.path.exists(path):
+		os.makedirs(path)
+
+	with open(filename, "w") as file:
+		json.dump(data, file, indent=4)
+
+
+# --------------------------------- Pycord ---------------------------------
 
 async def temporary_reply(message: Message, text, delete_delay = config.delete_delay):
     sent_warning = await message.channel.send(f"{message.author.mention} {text}")
     await sent_warning.delete(delay = delete_delay)
 
 
-
-previous_message_time = time.time()
+# Stores the last time each user was scolder
+last_scold_times = {
+    # Key: channel id
+    # Value: {
+        # Key: user id
+        # Value: last time this user was scolded
+    # }
+}
 
 
 async def scold_user(message: Message, reply_text, delete=True):
     """
     Tell off the user by warning them and deleting the message
     """
-    global previous_message_time
-
     if delete:
         await message.delete()
+
+
+    channel_id  = message.channel.id
+    user_id     = message.author.id
+
+
+    if channel_id not in last_scold_times:
+        last_scold_times[channel_id] = {}
+        
+
+    if user_id not in last_scold_times[channel_id]:
+        last_scold_times[channel_id][user_id] = time.time()
     
     # skip if the previous message was sent a short time ago
-    if time.time() - previous_message_time < config.delete_delay + 1:
+    elif time.time() - last_scold_times[channel_id][user_id] < config.delete_delay + 1:
         return
-    previous_message_time = time.time()
+
+    else:
+        last_scold_times[channel_id][user_id] = time.time()
+
 
     await temporary_reply(message, reply_text)
 

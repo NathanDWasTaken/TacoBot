@@ -10,8 +10,8 @@ load_dotenv(env_file)
 
 
 
-testing = True
-
+testing         = True
+test_server_id  = 927704499194310717
 
 
 command_prefix  = "$"

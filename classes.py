@@ -14,6 +14,9 @@ import config
 
 
 class MessageType(Enum):
+    """
+    The different types of messages there are
+    """
     # A message that contains any url
     Url         = 1
 
@@ -26,6 +29,9 @@ class MessageType(Enum):
 
 
 class ValidityType(Enum):
+    """
+    Enum for the validity of a message
+    """
     Valid   = 1
 
     # Whenever a message is invalid, meaning that it does not belong in the channel
@@ -43,11 +49,8 @@ class ShareMessage:
     """
     Any message in a share channel
     """
-    message_type:     MessageType
-    validity        = ValidityType.Valid
-
-    def __init__(self, validity = ValidityType.Invalid) -> None:
-        self.validity = validity
+    message_type:   MessageType     = MessageType.Normal
+    validity:       ValidityType    = ValidityType.Valid
 
 
 
@@ -113,42 +116,53 @@ class ThreadChannel:
     A channel where the bot is supposed to creates a thread for each allowed message
     """
     # Message types where we create threads
-    thread_messages:    Set[MessageType]    = {MessageType.Normal, MessageType.Url, MessageType.File}
+    thread_messages:    Set[MessageType] = {*MessageType}
 
     # Message types that are banned in that channel and have to be removed
-    banned_messages:    Set[MessageType]    = {}
+    banned_messages:    Set[MessageType] = {}
 
     # urls that are allowed
-    allowed_websites:   Set[WebsiteType]    = {}
+    allowed_websites:   Set[WebsiteType] = {*WebsiteType}
 
     
-    # Error messages for the different invalid message types
-    invalid_messages = {
-        ValidityType.Invalid            : "You can only post songs in the form of a link from a supported website or an audio/video file!",
-        ValidityType.InvalidFileType    : "Only audio and video files are allowed!",
-        ValidityType.InvalidWebsite     : f"I currently only support the following websites: {', '.join([site.name for site in allowed_websites])}!",
-    }
 
 
 
-    def __init__(self, channel_id) -> None:
+    def __init__(self, channel_id, test_server=False, thread_msgs=None, banned_msgs=None, allowed_sites=None) -> None:
         self.id = channel_id
+
+        if thread_msgs is not None:
+            self.thread_messages    = thread_msgs
+        
+        if banned_msgs is not None:
+            self.banned_messages    = banned_msgs
+
+        if allowed_sites is not None:
+            self.allowed_websites   = allowed_sites
+
+
+        self.test_server        = test_server
         
 
-
-    def is_valid(self, message: Message):
-        if MessageType.Url not in self.banned_messages:
-            matched_url = re.search("http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+", message.clean_content)
-
-            if matched_url:
-                url     = matched_url.group(0)
-
-                return ShareURL(url, self.allowed_websites)
+        # Error messages for the different invalid message types
+        self.invalid_messages = {
+            ValidityType.Invalid            : "You can only post songs in the form of a link from a supported website or an audio/video file!",
+            ValidityType.InvalidFileType    : "Only audio and video files are allowed!",
+            ValidityType.InvalidWebsite     : f"Only urls to the following websites are allowed: {', '.join([site.name for site in self.allowed_websites])}!",
+        }
 
 
-        if MessageType.File not in self.banned_messages:
-            if len(message.attachments) != 0:
-                return ShareAttachment(message.attachments[0])
+    def message_type(self, message: Message):
+        matched_url = re.search("http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+", message.clean_content)
+
+        if matched_url:
+            url     = matched_url.group(0)
+
+            return ShareURL(url, self.allowed_websites)
+
+
+        if len(message.attachments) != 0:
+            return ShareAttachment(message.attachments[0])
 
         
         return ShareMessage()
@@ -158,27 +172,31 @@ class ThreadChannel:
         """
         moderate the share channel, meaning either create a thread or delete a message when necessary
         """
-        share_msg = self.is_valid(message)
+        share_msg = self.message_type(message)
+
+        if share_msg.message_type in self.banned_messages:
+            await scold_user(message, f"Cannot send {share_msg.message_type.name} messages in this channel", True)
+            return
+
+
+
+        if share_msg.message_type not in self.thread_messages:
+            return
+
 
         thread_title   = None
-
-
         if share_msg.validity != ValidityType.Valid:
             # Don't delete message if it's a website, maybe it's soundcloud?
-            delete_msg = share_msg.validity != ValidityType.InvalidWebsite
+            delete_msg = share_msg.message_type in self.banned_messages
 
             await scold_user(message, self.invalid_messages[share_msg.validity], delete_msg)
             return
 
 
-        elif share_msg.message_type == MessageType.Url:
+        if share_msg.message_type == MessageType.Url:
             url     = share_msg.url
 
             website = share_msg.website
-
-            if website not in self.allowed_websites:
-                await temporary_reply(message, "")
-
 
             try:
                 if website == WebsiteType.YouTube:
@@ -193,7 +211,10 @@ class ThreadChannel:
                 print("Message received from user:")
                 print(message.clean_content)
                 print("\n")
-                await temporary_reply(message, f"Something went wrong getting the song title from {website.value}. \nYou most likely didn't send a valid song!", delete_delay=config.delete_delay + 2)
+
+                reply = f"Something went wrong getting the song title from {website.value}. \nYou most likely didn't send a valid song!"
+                await temporary_reply(message, reply, delete_delay=config.delete_delay + 2)
+                return
 
 
 
@@ -201,6 +222,10 @@ class ThreadChannel:
             # remove filetype from filename and replace underscores with spaces
             attachment_name = share_msg.attachment.filename.replace("_", " ")
             thread_title    = ".".join(attachment_name.split(".")[:-1])
+
+
+        elif share_msg.message_type == MessageType.Normal:
+            thread_title = message.author.display_name
 
         
         # Shorten thread title
@@ -217,10 +242,19 @@ class ShareMedia(ThreadChannel):
     Channel where you're supposed to share music (only urls to correct sites)
     """
 
-    allowed_messages = {MessageType.Url, MessageType.File}
+    thread_messages     = {MessageType.Url, MessageType.File}
+    banned_messages     = {MessageType.Normal}
+    allowed_websites    = {*WebsiteType}
 
-    allowed_websites = {WebsiteType.YouTube, WebsiteType.Spotify}
 
+
+class ShareSuggestion(ThreadChannel):
+    """
+    Channel where you share ideas
+    """
+
+    thread_messages     = {MessageType.Normal}
+    banned_messages     = {MessageType.Url, MessageType.File}
 
 
 
@@ -234,6 +268,7 @@ thread_channels_per_server = {
 
     # Test discord server
     927704499194310717 : [
-        ShareMedia(927704530903261265)
+        ShareMedia(927704530903261265, test_server=True),
+        ShareSuggestion(937080002674040952, test_server=True)
     ]
 }

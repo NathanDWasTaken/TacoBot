@@ -30,3 +30,6 @@
             - automated testing would have to be written in same program as the main bot
             - would need both bots in the same server -> both would try to moderate it, potentially reacting to each other's messages
         - would have to add additional checks for what server message is in as well as what mode (config.testing) it's in
+
+    
+    - Dedicated Testing channel? (Discord channel as well as a seperate ThreadChannel subclass)

@@ -17,31 +17,21 @@ class MessageType(Enum):
     """
     The different types of messages there are
     """
+    # A message with an invalid file
+    InvalidFile = -2
+
+    # A message with an invalid url
+    InvalidUrl  = -1
+
+    # A message that is none of the above
+    Normal      = 0
+
     # A message that contains any url
     Url         = 1
 
     # A message that contains a file
     File        = 2
 
-    # A message that is none of the above
-    Normal      = 0
-
-
-
-class ValidityType(Enum):
-    """
-    Enum for the validity of a message
-    """
-    Valid   = 1
-
-    # Whenever a message is invalid, meaning that it does not belong in the channel
-    Invalid = 0
-
-    # Whenever a file is Invalid
-    InvalidFileType = -1
-
-    # Whenever a website is not part of the allowed websites
-    InvalidWebsite  = -2
 
 
 
@@ -50,7 +40,8 @@ class ShareMessage:
     Any message in a share channel
     """
     message_type:   MessageType     = MessageType.Normal
-    validity:       ValidityType    = ValidityType.Valid
+    valid:          bool            = True
+    delete:         bool            = False
 
 
 
@@ -93,7 +84,7 @@ class ShareURL(ShareMessage):
                 self.website    = website
                 return
 
-        self.validity = ValidityType.InvalidWebsite
+        self.message_type = MessageType.InvalidUrl
 
 
 
@@ -101,12 +92,12 @@ class ShareAttachment(ShareMessage):
     attachment: Attachment
 
 
-    def __init__(self, attachment: Attachment) -> None:
+    def __init__(self, attachment: Attachment, allowed_files) -> None:
         self.message_type   = MessageType.File
         self.attachment     = attachment
 
-        if attachment.content_type is None or not attachment.content_type.split(";")[0].split("/")[0] in {"audio", "video"}:
-            self.validity = ValidityType.InvalidFileType
+        if attachment.content_type is None or not attachment.content_type.split(";")[0].split("/")[0] in allowed_files:
+            self.message_type = MessageType.InvalidFile
 
 
 
@@ -116,13 +107,20 @@ class ThreadChannel:
     A channel where the bot is supposed to creates a thread for each allowed message
     """
     # Message types where we create threads
-    thread_messages:    Set[MessageType] = {*MessageType}
+    thread_messages:    Set[MessageType]    = {*MessageType}
 
     # Message types that are banned in that channel and have to be removed
-    banned_messages:    Set[MessageType] = {}
+    banned_messages:    Set[MessageType]    = {}
 
     # urls that are allowed
-    allowed_websites:   Set[WebsiteType] = {*WebsiteType}
+    allowed_websites:   Set[WebsiteType]    = {*WebsiteType}
+
+    # files that are allowed
+    allowed_files:      Set[str]            = {"audio", "video"}
+
+
+    # Whether banned messages should get all the elements not in thread_messages
+    banned_msgs_opposite: bool              = False
 
     
 
@@ -146,10 +144,12 @@ class ThreadChannel:
 
         # Error messages for the different invalid message types
         self.invalid_messages = {
-            ValidityType.Invalid            : "You can only post songs in the form of a link from a supported website or an audio/video file!",
-            ValidityType.InvalidFileType    : "Only audio and video files are allowed!",
-            ValidityType.InvalidWebsite     : f"Only urls to the following websites are allowed: {', '.join([site.name for site in self.allowed_websites])}!",
+            MessageType.InvalidFile : "Only audio and video files are allowed!",
+            MessageType.InvalidUrl      : f"This url is either not valid or from an unsupported website: {', '.join([site.name for site in self.allowed_websites])}!",
         }
+
+        if self.banned_msgs_opposite:
+            self.banned_messages = {*MessageType} - self.thread_messages
 
 
     def message_type(self, message: Message):
@@ -162,7 +162,7 @@ class ThreadChannel:
 
 
         if len(message.attachments) != 0:
-            return ShareAttachment(message.attachments[0])
+            return ShareAttachment(message.attachments[0], self.allowed_files)
 
         
         return ShareMessage()
@@ -185,11 +185,11 @@ class ThreadChannel:
 
 
         thread_title   = None
-        if share_msg.validity != ValidityType.Valid:
-            # Don't delete message if it's a website, maybe it's soundcloud?
+        if share_msg.message_type.value < 0:
+            # Only delete messages that are in the banned messages
             delete_msg = share_msg.message_type in self.banned_messages
 
-            await scold_user(message, self.invalid_messages[share_msg.validity], delete_msg)
+            await scold_user(message, self.invalid_messages[share_msg.message_type], delete_msg)
             return
 
 
@@ -243,8 +243,7 @@ class ShareMedia(ThreadChannel):
     """
 
     thread_messages     = {MessageType.Url, MessageType.File}
-    banned_messages     = {MessageType.Normal}
-    allowed_websites    = {*WebsiteType}
+    banned_messages     = {MessageType.Normal, MessageType.InvalidFile}
 
 
 
@@ -254,7 +253,18 @@ class ShareSuggestion(ThreadChannel):
     """
 
     thread_messages     = {MessageType.Normal}
-    banned_messages     = {MessageType.Url, MessageType.File}
+
+    banned_msgs_opposite = True
+
+
+class SharePics(ThreadChannel):
+    thread_messages     = {MessageType.File, MessageType.Url}
+
+    allowed_files       = {"image", "video"}
+    allowed_websites    = {WebsiteType.YouTube}
+
+    banned_msgs_opposite = True
+
 
 
 
@@ -263,12 +273,16 @@ class ShareSuggestion(ThreadChannel):
 thread_channels_per_server = {
     # Main discord server
     924350783892389939 : [
-        ShareMedia(924352019026833498)
+        ShareMedia(924352019026833498),
+        SharePics(933058673872367737),
+        SharePics(932736792443092992),
+        ShareSuggestion(927726978948296715)
     ],
 
     # Test discord server
     927704499194310717 : [
-        ShareMedia(927704530903261265, test_server=True),
-        ShareSuggestion(937080002674040952, test_server=True)
+        ShareMedia(927704530903261265,      test_server=True),
+        ShareSuggestion(937080002674040952, test_server=True),
+        SharePics(937500000391413880,       test_server=True),
     ]
 }

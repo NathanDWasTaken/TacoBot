@@ -18,6 +18,9 @@ command_prefix  = "$"
 delete_delay    = 5
 
 
+shared_songs_file = "data/shared_songs.json"
+
+
 
 # ---------------------------- API STUFF ----------------------------
 spotify_client_id   = os.getenv("SPOTIFY_API_CLIENT_ID")

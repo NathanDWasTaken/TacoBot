@@ -1,4 +1,4 @@
-import os, time, json
+import os, time, json, re
 
 import spotipy
 from spotipy.oauth2     import SpotifyClientCredentials
@@ -33,11 +33,40 @@ def save_json(filename, data):
 		json.dump(data, file, indent=4)
 
 
+# ---------------------------------- MISC ----------------------------------
+
+def parse_url(txt):
+    matched_url = re.search("http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+", txt)
+
+    if matched_url:
+        return matched_url.group(0)
+
+
+def add_values(d: dict, keys, value):
+    """
+    Creates nested dictionaries given the provided keys and the value
+    """
+    intermediate_dict = d
+    for i, key in enumerate(keys):
+        if type(key) == int:
+            key = str(key)
+
+        if i == len(keys) -1:
+            intermediate_dict[key] = value
+            return
+
+        if key not in intermediate_dict:
+            intermediate_dict[key] = {}
+
+        intermediate_dict = intermediate_dict[key]
+
 # --------------------------------- Pycord ---------------------------------
 
-async def temporary_reply(message: Message, text, delete_delay = config.delete_delay):
-    sent_warning = await message.channel.send(f"{message.author.mention} {text}")
-    await sent_warning.delete(delay = delete_delay)
+async def standard_reply(message: Message, text, delete_delay = config.delete_delay, **kwargs):
+    """
+    The standard reply message for this bot, takes additional arguments for the channel.send method
+    """
+    await message.channel.send(f"{message.author.mention} {text}", delete_after=delete_delay, **kwargs)
 
 
 # Stores the last time each user was scolder
@@ -77,7 +106,7 @@ async def scold_user(message: Message, reply_text, delete=True):
         last_scold_times[channel_id][user_id] = time.time()
 
 
-    await temporary_reply(message, reply_text)
+    await standard_reply(message, reply_text)
 
 
 
@@ -88,9 +117,7 @@ sp = spotipy.Spotify(
     )
 )
 
-def get_spotify_title(url):
-    song = sp.track(url)
-
+def get_spotify_title(song):
     artists = song["artists"]
 
     title = f"{artists[0]['name']} - {song['name']}"

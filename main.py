@@ -41,11 +41,12 @@ for channel_list in thread_channels_per_server.values():
 
 
 bot     = commands.Bot(command_prefix=config.command_prefix)
+
+
     
 @bot.event
 async def on_ready():
     print(f'We have logged in as {bot.user}')
-
 
 
 @bot.event

@@ -1,5 +1,3 @@
-import re
-
 from enum               import Enum
 from urllib.parse       import urlparse
 from typing             import Set
@@ -8,7 +6,7 @@ from pytube             import YouTube
 from discord.message    import Message, Attachment
 
 
-from misc               import scold_user, get_spotify_title, temporary_reply, scold_user
+from misc               import add_values, load_json, parse_url, save_json, scold_user, get_spotify_title, standard_reply, scold_user, sp
 
 import config
 
@@ -153,11 +151,9 @@ class ThreadChannel:
 
 
     def message_type(self, message: Message):
-        matched_url = re.search("http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+", message.clean_content)
+        url = parse_url(message.clean_content)
 
-        if matched_url:
-            url     = matched_url.group(0)
-
+        if url:
             return ShareURL(url, self.allowed_websites)
 
 
@@ -200,10 +196,36 @@ class ThreadChannel:
 
             try:
                 if website == WebsiteType.YouTube:
-                    thread_title = YouTube(url).title
+                    song_inst       = YouTube(url)
+
+                    thread_title    = song_inst.title
+                    song_id         = song_inst.video_id
+
 
                 elif website == WebsiteType.Spotify:
-                    thread_title = get_spotify_title(url)
+                    song            = sp.track(url)
+
+                    song_id         = song["id"]
+                    thread_title    = get_spotify_title(song)
+
+                
+                shared_songs    = load_json(config.shared_songs_file)
+                channel_id      = str(message.channel.id)
+
+                try:
+                    prev_message_id = shared_songs[channel_id][website.name][song_id]
+
+                    prev_message: Message = await message.channel.fetch_message(prev_message_id)
+                    text = f"The song '{thread_title}' was already shared here before by {prev_message.author.display_name} (See replied message)"
+
+                    await standard_reply(message, text, delete_delay=None, reference=prev_message, mention_author=False)
+
+
+                except KeyError:
+                    # This song has not yet been shared
+                    add_values(shared_songs, (channel_id, website.name, song_id), message.id)
+
+                    save_json(config.shared_songs_file, shared_songs)
 
 
             except Exception as e:
@@ -213,7 +235,7 @@ class ThreadChannel:
                 print("\n")
 
                 reply = f"Something went wrong getting the song title from {website.value}. \nYou most likely didn't send a valid song!"
-                await temporary_reply(message, reply, delete_delay=config.delete_delay + 2)
+                await standard_reply(message, reply, delete_delay=config.delete_delay + 2)
                 return
 
 

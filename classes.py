@@ -38,7 +38,6 @@ class ShareMessage:
     Any message in a share channel
     """
     message_type:   MessageType     = MessageType.Normal
-    valid:          bool            = True
     delete:         bool            = False
 
 

@@ -10,7 +10,7 @@ sys.path.append(parent_folder)
 
 import config
 from misc           import get_api_key, parse_url, load_json, save_json, add_values, sp
-from classes        import ShareURL, WebsiteType
+from classes        import MessageType, ShareURL, WebsiteType
 
 
 from discord        import Message
@@ -21,7 +21,7 @@ from pytube         import YouTube
 bot     = commands.Bot()
 
 
-channel_id  = 927704530903261265
+channel_id  = 924352019026833498
 nr_messages = 300
 
 
@@ -44,7 +44,16 @@ async def on_ready():
         message: Message
         url = parse_url(message.clean_content)
 
+        if url is None:
+            print(f"Message does not contain url: '{message.clean_content}'")
+            continue
+
         share_msg = ShareURL(url)
+
+        if share_msg.message_type == MessageType.InvalidUrl:
+            print(f"Could not ID the following url: '{share_msg.url}'")
+            continue
+
         website = share_msg.website
 
         if website == WebsiteType.YouTube:

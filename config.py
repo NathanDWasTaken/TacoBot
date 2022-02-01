@@ -18,7 +18,8 @@ command_prefix  = "$"
 delete_delay    = 5
 
 
-shared_songs_file = "data/shared_songs.json"
+data_folder         = os.path.join(file_folder, "data")
+shared_songs_file   = os.path.join(data_folder, "shared_songs.json")
 
 
 

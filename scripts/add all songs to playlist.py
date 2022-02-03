@@ -1,4 +1,7 @@
-# Goes over all messages in the given channel and adds all the spotify and youtube songs to the local json files (which is used to keep track of what songs have already been posted)
+# Currently only supports youtube playlist
+
+# Goal of this is to loop over each message in the given channel and then add it to the youtube playlist (if it's a youtube song)
+
 
 
 # Allows us to import files from parent dir
@@ -12,7 +15,7 @@ sys.path.append(parent_folder)
 
 
 import config
-from misc           import get_api_key, parse_url, load_json, save_json, add_values, sp
+from misc           import get_api_key, parse_url, yt_add_to_playlist
 from classes        import MessageType, ShareURL, WebsiteType
 
 
@@ -24,7 +27,7 @@ from pytube         import YouTube
 bot     = commands.Bot()
 
 
-channel_id  = 924352019026833498
+channel_id  = 927704530903261265
 nr_messages = 300
 
 
@@ -33,8 +36,6 @@ nr_messages = 300
 async def on_ready():
     print(f'We have logged in as {bot.user}')
 
-
-    shared_songs = load_json(config.shared_songs_file, {})
 
     share_edm = bot.get_channel(channel_id)
     messages = await share_edm.history(limit=nr_messages).flatten()
@@ -62,21 +63,13 @@ async def on_ready():
         if website == WebsiteType.YouTube:
             song_id = YouTube(url).video_id
 
+            yt_add_to_playlist(song_id)
+
         elif website == WebsiteType.Spotify:
-            song_id = sp.track(url)["id"]
-
-        
-        keys = (message.channel.id, song_id)
-
-        add_values(shared_songs, keys, message.id)
+            ...
 
 
-    save_json(config.shared_songs_file, shared_songs)
 
     bot.loop.stop()
-    
-
-
-
 
 bot.run(get_api_key(config.testing))

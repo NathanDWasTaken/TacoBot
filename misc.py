@@ -1,4 +1,4 @@
-import os, time, json, re
+import os, time, json, re, pickle
 
 import spotipy
 from spotipy.oauth2     import SpotifyClientCredentials
@@ -137,3 +137,26 @@ def get_api_key(testing=False):
 
     return os.getenv("DISCORD_API_KEY")
 
+
+# -------------------------------- Playlists -------------------------------
+
+with open(config.yt_cred_file, "rb") as file:
+    _yt_channel = pickle.load(file)
+
+
+def yt_add_to_playlist(videoID, playlistID=config.youtube_playlist_id):
+    body = {
+        'snippet': {
+            'playlistId': playlistID, 
+            'resourceId': {
+                'kind': 'youtube#video',
+                'videoId': videoID
+            }
+        #'position': 0
+        }
+    }
+
+    _yt_channel.playlistItems().insert(
+        part="snippet",
+        body=body
+    ).execute()

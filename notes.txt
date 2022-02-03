@@ -4,11 +4,10 @@
 
 
 
-
-- Keep track of songs already posted 
-    -> let user know if they posted a song that has already been shared, with a link to that message
-    -> get all previous messages: messages = await channel.history(limit=200).flatten()
-
+- Syncing list of shared songs
+    -> songs are deleted when a message is deleted
+        -> if a message is a duplicate (meaning that there already is a message that shared that song), then the song will be removed from the shared_songs.json, even though there is still another message with that song
+        -> for each song in shared_songs.json -> store list of all messages that have it
 
 
 - Think of a way to automate testing

@@ -4,8 +4,8 @@ from discord        import Message, TextChannel, Thread
 from discord.ext    import commands
 
 
-from misc           import get_api_key
-from classes        import ThreadChannel, thread_channels_per_server
+from misc           import get_api_key, load_json, parse_url, save_json
+from classes        import ThreadChannel, get_website_type, thread_channels_per_server
 import config
 
 
@@ -79,6 +79,15 @@ async def on_message_delete(message: Message):
 
     if message.channel.id not in thread_channels:
         return
+
+    shared_songs = load_json(config.shared_songs_file)
+
+    msg_id = str(message.id)
+
+    if msg_id in shared_songs[message.channel.id]:
+        del shared_songs[message.channel.id][msg_id]
+
+    save_json(config.shared_songs_file, shared_songs)
 
 
     thread = message.channel.get_thread(message.id)

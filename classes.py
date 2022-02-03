@@ -3,10 +3,10 @@ from urllib.parse       import urlparse
 from typing             import Set
 from pytube             import YouTube
 
-from discord.message    import Message, Attachment
+from discord            import Message, Attachment, NotFound
 
 
-from misc               import add_values, load_json, parse_url, save_json, scold_user, get_spotify_title, standard_reply, scold_user, sp
+from misc               import add_values, load_json, parse_url, save_json, scold_user, get_spotify_title, standard_reply, scold_user, sp, yt_add_to_playlist
 
 import config
 
@@ -51,6 +51,22 @@ class WebsiteType(Enum):
 
 
 
+website_domains = {
+    "youtu.be"          : WebsiteType.YouTube,
+    "youtube.com"       : WebsiteType.YouTube,
+
+    "open.spotify.com"  : WebsiteType.Spotify,
+    "spotify.com"       : WebsiteType.Spotify,
+}
+
+
+def get_website_type(url):
+    hostname = urlparse(url.replace("www.", "")).hostname
+
+    if hostname in website_domains:
+        return website_domains[hostname]
+
+
 
 class ShareURL(ShareMessage):
     """
@@ -59,27 +75,17 @@ class ShareURL(ShareMessage):
     url:        str
     website:    WebsiteType
 
-    website_domains = {
-        "youtu.be"          : WebsiteType.YouTube,
-        "youtube.com"       : WebsiteType.YouTube,
-
-        "open.spotify.com"  : WebsiteType.Spotify,
-        "spotify.com"       : WebsiteType.Spotify,
-    }
-
 
     def __init__(self, url: str, allowed_websites = {*WebsiteType}) -> None:
         self.message_type   = MessageType.Url
         self.url            = url.replace("www.", "")
 
-        hostname            = urlparse(self.url).hostname
+        website = get_website_type(self.url)
 
-        if hostname in self.website_domains:
-            website = self.website_domains[hostname]
 
-            if website in allowed_websites:
-                self.website    = website
-                return
+        if website is not None and website in allowed_websites:
+            self.website    = website
+            return
 
         self.message_type = MessageType.InvalidUrl
 
@@ -195,24 +201,24 @@ class ThreadChannel:
 
             try:
                 if website == WebsiteType.YouTube:
-                    song_inst       = YouTube(url)
+                    yt_song         = YouTube(url)
 
-                    thread_title    = song_inst.title
-                    song_id         = song_inst.video_id
+                    thread_title    = yt_song.title
+                    song_id         = yt_song.video_id
 
 
                 elif website == WebsiteType.Spotify:
-                    song            = sp.track(url)
+                    sp_song         = sp.track(url)
 
-                    song_id         = song["id"]
-                    thread_title    = get_spotify_title(song)
+                    song_id         = sp_song["id"]
+                    thread_title    = get_spotify_title(sp_song)
 
                 
                 shared_songs    = load_json(config.shared_songs_file)
                 channel_id      = str(message.channel.id)
 
                 try:
-                    prev_message_id = shared_songs[channel_id][website.name][song_id]
+                    prev_message_id = shared_songs[channel_id][song_id]
 
                     prev_message: Message = await message.channel.fetch_message(prev_message_id)
                     text = f"The song '{thread_title}' was already shared here before by {prev_message.author.display_name} (See replied message)"
@@ -222,9 +228,25 @@ class ThreadChannel:
 
                 except KeyError:
                     # This song has not yet been shared
-                    add_values(shared_songs, (channel_id, website.name, song_id), message.id)
+                    add_values(shared_songs, (channel_id, song_id), message.id)
 
                     save_json(config.shared_songs_file, shared_songs)
+
+                    # Add to playlist
+
+                    if website == WebsiteType.YouTube:
+                        yt_add_to_playlist(song_id)
+
+                    elif website == WebsiteType.Spotify:
+                        ...
+
+
+                except NotFound:
+                    # When this is raised, it means that the local save of all the shared songs still has this entry, the message was however deleted
+                    # In this case we should remove the entry from the local shared songs
+                    ...
+
+
 
 
             except Exception as e:

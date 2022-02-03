@@ -1,26 +1,47 @@
+# This file takes the different config variables stored in settings and uses them to get additional variables that are often used throughout the system
+# This file should not be changed
+
 import os
-from dotenv import load_dotenv
+from os.path    import join, split
+from dotenv     import load_dotenv
+
+from settings   import *
 
 
-# Load api_key.env
-file_folder = os.path.split(__file__)[0]
-env_file    = os.path.join(file_folder, "api_key.env")
+# ----------------------------- FOLDERS -----------------------------
+file_folder         = split(__file__)[0]
+
+# Folder where private information is stored (API Keys, Playlist IDs, Google client credentials)
+secrets_folder      = join(file_folder, "secrets")
+
+# Folder where data is stored ()
+data_folder         = join(file_folder, "data")
+
+
+
+# ----------------------------- ENV VARS ----------------------------
+env_file            = join(secrets_folder, env_filename)
 load_dotenv(env_file)
 
 
+shared_songs_file   = join(data_folder, shared_songs_filename)
 
 
-testing         = True
-test_server_id  = 927704499194310717
+
+# Take Youtube ID and the User credentials depending on if we're testing or not (2 different youtube accounts for testing and normal)
+if testing:
+    youtube_playlist_id = os.getenv("YT_PLAYLIST_ID_TEST")
+
+    _yt_cred_filename    = "yt channel credentials test"
 
 
-command_prefix  = "$"
-delete_delay    = 5
+else:
+    youtube_playlist_id = os.getenv("YT_PLAYLIST_ID")
+
+    _yt_cred_filename    = "yt channel credentials"
 
 
-data_folder         = os.path.join(file_folder, "data")
-shared_songs_file   = os.path.join(data_folder, "shared_songs.json")
-
+yt_cred_file = join(secrets_folder, _yt_cred_filename)
 
 
 # ---------------------------- API STUFF ----------------------------

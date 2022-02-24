@@ -50,7 +50,20 @@ YOUTUBE_API_VERSION = "v3"
 
 
 
+
+testing = False
+
 credentials_file = "yt channel credentials"
+
+if testing:
+    credentials_file += " test"
+
+    # https://www.youtube.com/playlist?list=PLBGQSubgZKsZAV3mT6RELLGRmd2L_RP-F
+    playlist_id = "PLBGQSubgZKsZAV3mT6RELLGRmd2L_RP-F"
+
+else:
+    # https://www.youtube.com/playlist?list=PLzmHkZBU0EeqwC-7aPtQoypsC3toOvNOX
+    playlist_id = "PLzmHkZBU0EeqwC-7aPtQoypsC3toOvNOX"
 
 
 def get_authenticated_service():
@@ -68,27 +81,27 @@ def get_authenticated_service():
 
 
 def add_video_to_playlist(youtube, videoID, playlistID):
-    add_video_request=youtube.playlistItems().insert(
-    part="snippet",
-    body={
-        'snippet': {
-            'playlistId': playlistID, 
-            'resourceId': {
-                    'kind': 'youtube#video',
-                'videoId': videoID
+    youtube.playlistItems().insert(
+        part="snippet",
+        body={
+            'snippet': {
+                'playlistId': playlistID, 
+                'resourceId': {
+                        'kind': 'youtube#video',
+                    'videoId': videoID
+                }
+            #'position': 0
             }
-        #'position': 0
-        }
-}
-    ).execute()
+    }).execute()
+
 
 if __name__ == '__main__':
-    # youtube = get_authenticated_service()
+    youtube = get_authenticated_service()
 
-    # with open(credentials_file, "wb") as file:
-    #     pickle.dump(youtube, file)
+    with open(credentials_file, "wb") as file:
+        pickle.dump(youtube, file)
 
     with open(credentials_file, "rb") as file:
         youtube = pickle.load(file)
 
-    add_video_to_playlist(youtube, "r-SurvChGFk", "PLBGQSubgZKsZAV3mT6RELLGRmd2L_RP-F")
+    add_video_to_playlist(youtube, "r-SurvChGFk", playlist_id)

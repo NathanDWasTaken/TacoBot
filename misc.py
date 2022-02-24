@@ -11,26 +11,29 @@ import config
 # ---------------------------------- JSON ----------------------------------
 
 
-def load_json(filename, default_return={}):
-	try:
-		with open(filename, "r") as file:
-			return json.load(file)
-	except (FileNotFoundError, json.decoder.JSONDecodeError):
-		try:
-			raise default_return
-		except TypeError:
-			return default_return
+def load_json(filename, default_return=None):
+    if default_return is None:
+        default_return = {}
+        
+    try:
+        with open(filename, "r") as file:
+            return json.load(file)
+    except (FileNotFoundError, json.decoder.JSONDecodeError):
+        try:
+            raise default_return
+        except TypeError:
+            return default_return
 
 
 
 def save_json(filename, data):
-	path = os.path.split(filename)[0]
+    path = os.path.split(filename)[0]
 
-	if not os.path.exists(path):
-		os.makedirs(path)
+    if not os.path.exists(path):
+        os.makedirs(path)
 
-	with open(filename, "w") as file:
-		json.dump(data, file, indent=4)
+    with open(filename, "w") as file:
+        json.dump(data, file, indent=4)
 
 
 # ---------------------------------- MISC ----------------------------------
@@ -42,23 +45,44 @@ def parse_url(txt):
         return matched_url.group(0)
 
 
-def add_values(d: dict, keys, value):
+def add_values(d: dict, keys: list, value):
     """
-    Creates nested dictionaries given the provided keys and the value
+    Recursively adds nested dictionaries using the given keys and value
     """
-    intermediate_dict = d
-    for i, key in enumerate(keys):
-        if type(key) == int:
-            key = str(key)
 
-        if i == len(keys) -1:
-            intermediate_dict[key] = value
-            return
+    key = keys.pop(0)
 
-        if key not in intermediate_dict:
-            intermediate_dict[key] = {}
 
-        intermediate_dict = intermediate_dict[key]
+    # Base case, when we've gone over all keys we return
+    if len(keys) == 0:
+        # If there is not yet an entry for this key we simply make add the key value pair
+        if key not in d:
+            d[key] = value
+
+        # However if the key is already in the dictionary, we check whether the value is a list. If it is a list we can append the current value to it
+        elif type(d[key]) == list:
+
+            if type(value) == list:
+                d[key] += value
+            else:
+                d[key].append(value)
+
+        else:
+            raise Exception("Unable to insert the value, the entry already exists and is not a list")
+
+        return d
+
+
+    elif key not in d:
+        recursion_result = add_values({}, keys, value)
+    
+    else:
+        recursion_result = add_values(d[key], keys, value)
+
+
+    d[key] = recursion_result
+    return d
+
 
 # --------------------------------- Pycord ---------------------------------
 

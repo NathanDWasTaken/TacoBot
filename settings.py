@@ -2,11 +2,16 @@
 # Params here can be changed
 
 
-testing                 = False
+testing                 = True
 
 
 env_filename            = "secrets.env"
-shared_songs_filename   = "shared_songs.json"
+
+# Stores the shared songs where the last key is the song ID
+_shared_songs_by_songID_filename = "shared_songs_by_songID.json"
+
+# Stores the shared songs where the last key is the discord message ID
+_shared_songs_by_msgID_filename  = "shared_songs_by_msgID.json"
 
 
 # ID of the test discord server

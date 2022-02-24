@@ -24,7 +24,11 @@ from pytube         import YouTube
 bot     = commands.Bot()
 
 
-channel_id  = 924352019026833498
+if config.testing:
+    channel_id = 927704530903261265
+else:
+    channel_id = 924352019026833498
+
 nr_messages = 300
 
 
@@ -34,7 +38,8 @@ async def on_ready():
     print(f'We have logged in as {bot.user}')
 
 
-    shared_songs = load_json(config.shared_songs_file, {})
+    shared_songs_by_songID  = load_json(config.shared_songs_by_songID)
+    shared_songs_by_msgID   = load_json(config.shared_songs_by_msgID)
 
     share_edm = bot.get_channel(channel_id)
     messages = await share_edm.history(limit=nr_messages).flatten()
@@ -65,13 +70,15 @@ async def on_ready():
         elif website == WebsiteType.Spotify:
             song_id = sp.track(url)["id"]
 
-        
-        keys = (message.channel.id, song_id)
 
-        add_values(shared_songs, keys, message.id)
+        msg_id = str(message.id)
+
+        add_values(shared_songs_by_songID, [message.channel.id, song_id], [msg_id])
+        add_values(shared_songs_by_msgID, [msg_id], song_id)
 
 
-    save_json(config.shared_songs_file, shared_songs)
+    save_json(config.shared_songs_by_songID, shared_songs_by_songID)
+    save_json(config.shared_songs_by_msgID, shared_songs_by_msgID)
 
     bot.loop.stop()
     

@@ -6,6 +6,7 @@ from os.path    import join, split
 from dotenv     import load_dotenv
 
 from settings   import *
+import settings
 
 
 # ----------------------------- FOLDERS -----------------------------
@@ -24,7 +25,8 @@ env_file            = join(secrets_folder, env_filename)
 load_dotenv(env_file)
 
 
-shared_songs_file   = join(data_folder, shared_songs_filename)
+shared_songs_by_songID  = join(data_folder, settings._shared_songs_by_songID_filename)
+shared_songs_by_msgID   = join(data_folder, settings._shared_songs_by_msgID_filename)
 
 
 

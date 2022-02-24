@@ -214,31 +214,39 @@ class ThreadChannel:
                     thread_title    = get_spotify_title(sp_song)
 
                 
-                shared_songs    = load_json(config.shared_songs_file)
-                channel_id      = str(message.channel.id)
+                channel_id  = str(message.channel.id)
+                msg_id      = str(message.id)
 
+                shared_songs_by_songID = load_json(config.shared_songs_by_songID)
+                shared_songs_by_msgID  = load_json(config.shared_songs_by_msgID)
+
+                # Check whether the song has already been shared
                 try:
-                    prev_message_id = shared_songs[channel_id][song_id]
+                    prev_message_ids = shared_songs_by_songID[channel_id][song_id]
 
-                    prev_message: Message = await message.channel.fetch_message(prev_message_id)
+                    prev_message: Message = await message.channel.fetch_message(prev_message_ids[0])
                     text = f"The song '{thread_title}' was already shared here before by {prev_message.author.display_name} (See replied message)"
 
                     await standard_reply(message, text, delete_delay=None, reference=prev_message, mention_author=False)
 
 
+                # The song has not yet been shared yet
                 except KeyError:
-                    # This song has not yet been shared
-                    add_values(shared_songs, (channel_id, song_id), message.id)
-
-                    save_json(config.shared_songs_file, shared_songs)
-
+                    
                     # Add to playlist
 
-                    if website == WebsiteType.YouTube:
-                        yt_add_to_playlist(song_id)
+                    try:
+                        if website == WebsiteType.YouTube:
+                            yt_add_to_playlist(song_id)
 
-                    elif website == WebsiteType.Spotify:
-                        ...
+                        elif website == WebsiteType.Spotify:
+                            ...
+
+                    except:
+                        text = f"Was unable to add this song to the {website.name} playlist: {song_id}"
+
+                        print(text)
+                        await standard_reply(message, text, delete_delay=config.delete_delay, mention_author=True)
 
 
                 except NotFound:
@@ -247,13 +255,20 @@ class ThreadChannel:
                     ...
 
 
+                # We still have to add the message ID to the list of shared songs since we don't actually delete the message, we leave that up to the user to do
+                add_values(shared_songs_by_songID, [channel_id, song_id], [msg_id])
+                add_values(shared_songs_by_msgID, [msg_id], song_id)
+
+                save_json(config.shared_songs_by_songID, shared_songs_by_songID)
+                save_json(config.shared_songs_by_msgID, shared_songs_by_msgID)
 
 
             except Exception as e:
+                print()
                 print("Could not find valid song title!")
                 print("Message received from user:")
                 print(message.clean_content)
-                print("\n")
+                print()
 
                 reply = f"Something went wrong getting the song title from {website.value}. \nYou most likely didn't send a valid song!"
                 await standard_reply(message, reply, delete_delay=config.delete_delay + 2)

@@ -25,9 +25,9 @@ env_file            = join(secrets_folder, env_filename)
 load_dotenv(env_file)
 
 
-shared_songs_by_songID  = join(data_folder, settings._shared_songs_by_songID_filename)
-shared_songs_by_msgID   = join(data_folder, settings._shared_songs_by_msgID_filename)
-
+shared_songs_by_songID      = join(data_folder, settings._shared_songs_by_songID_filename)
+shared_songs_by_msgID       = join(data_folder, settings._shared_songs_by_msgID_filename)
+playlist_items_by_songID    = join(data_folder, settings._playlist_items_by_songID_filename)
 
 
 # Take Youtube ID and the User credentials depending on if we're testing or not (2 different youtube accounts for testing and normal)

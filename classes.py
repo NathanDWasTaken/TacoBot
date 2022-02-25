@@ -234,13 +234,22 @@ class ThreadChannel:
                 except KeyError:
                     
                     # Add to playlist
+                    playlist_items_by_songID = load_json(config.playlist_items_by_songID)
+
 
                     try:
-                        if website == WebsiteType.YouTube:
-                            yt_add_to_playlist(song_id)
+                        if song_id not in playlist_items_by_songID:
 
-                        elif website == WebsiteType.Spotify:
-                            ...
+                            if website == WebsiteType.YouTube:
+                                playlistItem = yt_add_to_playlist(song_id)
+                                playlistItem_ID = playlistItem["id"]
+
+                            elif website == WebsiteType.Spotify:
+                                ...
+
+                            playlist_items_by_songID[song_id] = [website.value, playlistItem_ID]
+
+                            save_json(config.playlist_items_by_songID, playlist_items_by_songID)
 
                     except:
                         text = f"Was unable to add this song to the {website.name} playlist: {song_id}"

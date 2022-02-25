@@ -3,7 +3,11 @@
     -> potentially upload a shared file to youtube (unlisted) and add it to the playlist
 
 
-- Remove song from playlist when all copies of it have been deleted in a channel
+- Playlist:
+    - Bot can now add a youtube song to a playlist and stores it in playlist_items_by_songID
+    - Songs need to be removed from playlist once not a single message has the song anymore
+    - Add spotify support
+
 
 
 - Think of a way to automate testing

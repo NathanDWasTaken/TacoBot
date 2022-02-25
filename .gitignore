@@ -1,7 +1,7 @@
 **/discord_renamed
 **/.vscode
 *.env
-**/data
+
 **/secrets
 
 **.json

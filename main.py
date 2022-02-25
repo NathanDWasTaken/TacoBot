@@ -5,7 +5,7 @@ from discord.ext    import commands
 
 
 from misc           import get_api_key, load_json, parse_url, save_json
-from classes        import ThreadChannel, get_website_type, thread_channels_per_server
+from classes        import ThreadChannel, WebsiteType, get_website_type, thread_channels_per_server
 import config
 
 
@@ -40,7 +40,7 @@ for channel_list in thread_channels_per_server.values():
 
 
 
-bot     = commands.Bot(command_prefix=config.command_prefix, max_messages=2000)
+bot = commands.Bot(command_prefix=config.command_prefix, max_messages=2000)
 
 
     
@@ -89,9 +89,9 @@ async def handle_deleted_message(channel_id, msg_id):
             # This means that the song isn't anywhere in the channel anymore
             del shared_songs_by_songID[channel_id][song_id]
 
-            # This means we should remove the song from the playlist
+            # Which also means we should remove the song from the playlist
             ...
-            
+
         
         del shared_songs_by_msgID[msg_id]
 

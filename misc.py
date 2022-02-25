@@ -180,7 +180,27 @@ def yt_add_to_playlist(videoID, playlistID=config.youtube_playlist_id):
         }
     }
 
-    _yt_channel.playlistItems().insert(
+    return _yt_channel.playlistItems().insert(
+        part="snippet",
+        body=body
+    ).execute()
+
+    
+
+
+def yt_rem_from_playlist(videoID, playlistID=config.youtube_playlist_id):
+    body = {
+        'snippet': {
+            'playlistId': playlistID, 
+            'resourceId': {
+                'kind': 'youtube#video',
+                'videoId': videoID
+            }
+        #'position': 0
+        }
+    }
+
+    _yt_channel.playlistItems().delete(
         part="snippet",
         body=body
     ).execute()

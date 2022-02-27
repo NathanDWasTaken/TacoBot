@@ -4,8 +4,8 @@ from discord        import Message, RawMessageDeleteEvent, TextChannel, Thread
 from discord.ext    import commands
 
 
-from misc           import get_api_key, load_json, parse_url, save_json
-from classes        import ThreadChannel, WebsiteType, get_website_type, thread_channels_per_server
+from misc           import get_api_key, load_json, save_json, yt_rem_from_playlist
+from classes        import ThreadChannel, WebsiteType, thread_channels_per_server
 import config
 
 
@@ -69,10 +69,15 @@ async def on_message(message: Message):
     await thread_channel.moderate_channel(message)
 
 
+
 # main purposes of this function:
 # - if the message that was deleted has a thread, delete the thread too
 # - upldate the local databases of all the shared songs
-async def handle_deleted_message(channel_id, msg_id):
+@bot.event
+async def on_raw_message_delete(payload: RawMessageDeleteEvent):
+    channel_id  = str(payload.channel_id)
+    msg_id      = str(payload.message_id)
+
     if int(channel_id) not in thread_channels:
         return
 
@@ -85,11 +90,27 @@ async def handle_deleted_message(channel_id, msg_id):
 
 
         shared_songs_by_songID[channel_id][song_id].remove(msg_id)
+
+        # The song isn't anywhere in the channel anymore
         if shared_songs_by_songID[channel_id][song_id] == []:
-            # This means that the song isn't anywhere in the channel anymore
-            del shared_songs_by_songID[channel_id][song_id]
+
+            playlist_items_by_songID = load_json(config.playlist_items_by_songID)
 
             # Which also means we should remove the song from the playlist
+            website_name, playlistItemID = playlist_items_by_songID[song_id]
+            website = WebsiteType(website_name)
+
+            if website == WebsiteType.YouTube:
+                yt_rem_from_playlist(playlistItemID)
+
+            elif website == WebsiteType.Spotify:
+                ...
+
+            del shared_songs_by_songID[channel_id][song_id]
+            del playlist_items_by_songID[song_id]
+
+            save_json(config.playlist_items_by_songID, playlist_items_by_songID)
+            
             ...
 
         
@@ -104,11 +125,6 @@ async def handle_deleted_message(channel_id, msg_id):
     thread  = channel.get_thread(int(msg_id))
     if type(thread) == Thread:
         await thread.delete()
-
-
-@bot.event
-async def on_raw_message_delete(payload: RawMessageDeleteEvent):
-    await handle_deleted_message(str(payload.channel_id), str(payload.message_id))
 
 
 

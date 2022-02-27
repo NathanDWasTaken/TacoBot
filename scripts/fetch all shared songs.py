@@ -71,9 +71,9 @@ async def on_ready():
             song_id = sp.track(url)["id"]
 
 
-        msg_id = str(message.id)
+        msg_id      = str(message.id)
 
-        add_values(shared_songs_by_songID, [message.channel.id, song_id], [msg_id])
+        add_values(shared_songs_by_songID, [str(channel_id), song_id], [msg_id])
         add_values(shared_songs_by_msgID, [msg_id], song_id)
 
 

@@ -4,8 +4,12 @@
 
 
 - Playlist:
-    - Bot can now add a youtube song to a playlist and stores it in playlist_items_by_songID
-    - Songs need to be removed from playlist once not a single message has the song anymore
+    - Can now add a youtube song to a playlist and stores it in playlist_items_by_songID
+    - Removes song from playlist if there is not a single message in the channel that has the song
+    - Can now update the playlist and local databases from past shared messages using "update playlists and databases.py"
+        - What could happen is that a message with a song is deleted and the bot doesn't pick up on it. This would mean that the video would be stuck in the playlist forever
+        - Should loop through all items in the playlist and check whether the message is still there.
+
     - Add spotify support
 
 

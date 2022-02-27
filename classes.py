@@ -180,7 +180,7 @@ class ThreadChannel:
             return
 
 
-
+        # If the message type is not supposed to create a thread, we skip
         if share_msg.message_type not in self.thread_messages:
             return
 

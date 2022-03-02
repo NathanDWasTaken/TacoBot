@@ -85,11 +85,9 @@ async def on_raw_message_delete(payload: RawMessageDeleteEvent):
         return
 
     shared_songs_by_songID = load_json(config.shared_songs_by_songID)
+    shared_songs_by_msgID  = load_json(config.shared_songs_by_msgID)
 
     if msg_id in shared_songs_by_msgID[channel_id]:
-        shared_songs_by_msgID  = load_json(config.shared_songs_by_msgID)
-
-
         song_id = shared_songs_by_msgID[channel_id][msg_id]
 
         shared_songs_by_songID[channel_id][song_id].remove(msg_id)

@@ -39,6 +39,8 @@ def get_website_type(url):
     if hostname in website_domains:
         return website_domains[hostname]
 
+    return WebsiteType.Other
+
 
 
 class ShareURL(ShareMessage):

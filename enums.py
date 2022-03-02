@@ -27,3 +27,4 @@ class WebsiteType(Enum):
     """
     YouTube = "youtube"
     Spotify = "spotify"
+    Other   = None

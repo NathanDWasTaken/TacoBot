@@ -148,9 +148,16 @@ def get_spotify_title(song):
 
     title = f"{artists[0]['name']} - {song['name']}"
 
-    if len(artists) > 1:
-        extra_artists = [artist["name"] for artist in artists[1:]]
+    extra_artists = []
+    for artist in artists[1:]:
+        artist_name = artist["name"]
+        
+        # We do not include the name of an artist if their name is already in the title (avoids following example: "DROELOE - Borken Bricks - Madnap Remix ft. Madnap")
+        match = re.search(artist_name, song["name"])
+        if not match:
+            extra_artists.append(artist_name)
 
+    if extra_artists:
         title += " ft. "
         title += ", ".join(extra_artists)
 

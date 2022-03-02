@@ -4,8 +4,8 @@ from discord        import Message, RawMessageDeleteEvent, TextChannel, Thread
 from discord.ext    import commands
 
 
-from misc           import get_api_key, load_json, save_json, yt_rem_from_playlist
-from classes        import ThreadChannel, WebsiteType, thread_channels_per_server
+from misc           import get_api_key, load_json, save_json, rem_from_playlist
+from classes        import ThreadChannel, WebsiteType, sync_messages, thread_channels_per_server
 import config
 
 
@@ -42,10 +42,13 @@ for channel_list in thread_channels_per_server.values():
 
 bot = commands.Bot(command_prefix=config.command_prefix, max_messages=2000)
 
-
     
 @bot.event
 async def on_ready():
+    channel = bot.get_channel(int(config.playlist_channel))
+
+    await sync_messages(channel)
+
     print(f'We have logged in as {bot.user}')
 
 
@@ -86,7 +89,7 @@ async def on_raw_message_delete(payload: RawMessageDeleteEvent):
 
 
     if msg_id in shared_songs_by_msgID:
-        song_id = shared_songs_by_msgID[msg_id]
+        song_id = shared_songs_by_msgID[channel_id][msg_id]
 
 
         shared_songs_by_songID[channel_id][song_id].remove(msg_id)
@@ -100,11 +103,7 @@ async def on_raw_message_delete(payload: RawMessageDeleteEvent):
             website_name, playlistItemID = playlist_items_by_songID[song_id]
             website = WebsiteType(website_name)
 
-            if website == WebsiteType.YouTube:
-                yt_rem_from_playlist(playlistItemID)
-
-            elif website == WebsiteType.Spotify:
-                ...
+            rem_from_playlist(playlistItemID, website=website)
 
             del shared_songs_by_songID[channel_id][song_id]
             del playlist_items_by_songID[song_id]
@@ -114,7 +113,7 @@ async def on_raw_message_delete(payload: RawMessageDeleteEvent):
             ...
 
         
-        del shared_songs_by_msgID[msg_id]
+        del shared_songs_by_msgID[channel_id][msg_id]
 
 
         save_json(config.shared_songs_by_songID, shared_songs_by_songID)

@@ -8,13 +8,13 @@ testing                 = True
 env_filename            = "secrets.env"
 
 # Stores the shared songs where the last key is the song ID
-_shared_songs_by_songID_filename    = "shared_songs_by_songID.json"
+shared_songs_by_songID_filename    = "shared_songs_by_songID.json"
 
 # Stores the shared songs where the last key is the discord message ID
-_shared_songs_by_msgID_filename     = "shared_songs_by_msgID.json"
+shared_songs_by_msgID_filename     = "shared_songs_by_msgID.json"
 
 # Stores all the songs that have been added to a playlist. 
-_playlist_items_by_songID_filename  = "playlist_items_by_songID.json"
+playlist_items_by_songID_filename  = "playlist_items_by_songID.json"
 
 
 # ID of the test discord server
@@ -23,3 +23,11 @@ test_server_id          = 927704499194310717
 
 command_prefix          = "$"
 delete_delay            = 5
+
+# Number of messages the bot will fetch from a channel
+nr_messages             = 300
+
+spotify_scopes          = ["playlist-modify-private", "playlist-modify-public", "playlist-read-private"]
+
+# Number of tracks we want to receive for each request to spotify api
+spotify_request_size    = 100

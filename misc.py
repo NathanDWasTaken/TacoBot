@@ -1,10 +1,10 @@
 import os, time, json, re, pickle
 
 import spotipy
-from spotipy.oauth2     import SpotifyClientCredentials
+from spotipy.oauth2     import SpotifyOAuth
 from discord.message    import Message
 
-
+from enums              import WebsiteType
 import config
 
 
@@ -135,9 +135,11 @@ async def scold_user(message: Message, reply_text, delete=True):
 
 
 sp = spotipy.Spotify(
-    auth_manager=SpotifyClientCredentials(
+    auth_manager=SpotifyOAuth(
         client_id       = config.spotify_client_id,
-        client_secret   = config.spotify_key
+        client_secret   = config.spotify_key,
+        scope           = config.spotify_scopes,
+        redirect_uri    = "http://localhost:8040"
     )
 )
 
@@ -168,6 +170,14 @@ with open(config.yt_cred_file, "rb") as file:
     _yt_channel = pickle.load(file)
 
 
+def sp_add_to_playlist(songID):
+    sp.user_playlist_add_tracks(
+        user        = config.spotify_client_id, 
+        playlist_id = config.spotify_playlist_id, 
+        tracks      = [songID]
+    )
+
+
 def yt_add_to_playlist(videoID, playlistID=config.youtube_playlist_id):
     body = {
         'snippet': {
@@ -176,7 +186,6 @@ def yt_add_to_playlist(videoID, playlistID=config.youtube_playlist_id):
                 'kind': 'youtube#video',
                 'videoId': videoID
             }
-        #'position': 0
         }
     }
 
@@ -187,5 +196,99 @@ def yt_add_to_playlist(videoID, playlistID=config.youtube_playlist_id):
 
 
 
-def yt_rem_from_playlist(playlistItemID):
-    _yt_channel.playlistItems().delete(id = playlistItemID).execute()
+def rem_from_playlist(playlistItemID, website: WebsiteType):
+    if website == WebsiteType.YouTube:
+        _yt_channel.playlistItems().delete(id = playlistItemID).execute()
+
+    elif website == WebsiteType.Spotify:
+        print("Cannot currently remove songs from spotify")
+        
+        sp.playlist_remove_all_occurrences_of_items(
+            playlist_id = config.spotify_playlist_id,
+            items       = [playlistItemID]
+        )
+
+
+    else:
+        print("Invalid Website!")
+
+
+
+def fetch_songs_from_playlists(rem_duplicates=True):
+    """
+    returns playlistItems dict:
+        Key:      videoID
+        Value:    [WebsiteType, PlaylistItemID]
+    """
+
+    # Dict that holds the Song's ID as well as it's Website and PlaylistItemID
+    # Key:      videoID
+    # Value:    [WebsiteType, PlaylistItemID]
+    playlistItems = {}
+
+
+    # --------------------- YouTube ---------------------
+    response        = None
+    nextPageToken   = None
+
+
+    while response is None or nextPageToken:
+        response = _yt_channel.playlistItems().list(
+            part        ='contentDetails',
+            playlistId  = config.youtube_playlist_id,
+            maxResults  = 50,
+            pageToken   = nextPageToken
+        ).execute()
+
+
+        nextPageToken = response.get('nextPageToken')
+    
+
+        for playlistItem in response['items']:
+            videoID         = playlistItem["contentDetails"]["videoId"]
+            playlistItemID  = playlistItem["id"]
+
+            # If song already in playlistItems that means we have a duplicate -> remove
+            if videoID in playlistItems:
+
+                if rem_duplicates:
+                    rem_from_playlist(playlistItemID, WebsiteType.YouTube)
+
+                continue
+
+            playlistItems[videoID] = [WebsiteType.YouTube, playlistItemID]
+
+
+    # --------------------- Spotify ---------------------
+    
+    sp_next = True
+    offset  = 0
+
+    while sp_next is not None:
+        tracks = sp.user_playlist_tracks(
+            user        = config.spotify_client_id, 
+            limit       = config.spotify_request_size,
+            playlist_id = config.spotify_playlist_id,
+            offset      = offset
+        )
+
+        offset += config.spotify_request_size
+        sp_next = tracks["next"]
+
+
+        for item in tracks["items"]:
+            trackID = item["track"]["id"]
+
+            if trackID in playlistItems:
+                # The track is already in this dict it means there are duplicated -> remove them
+
+                if rem_duplicates:
+                    rem_from_playlist(trackID, WebsiteType.Spotify)
+                    sp_add_to_playlist(trackID)
+
+                continue
+
+            playlistItems[trackID] = [WebsiteType.Spotify, trackID]
+
+
+    return playlistItems

@@ -25,11 +25,9 @@ bot     = commands.Bot()
 
 
 if config.testing:
-    channel_id = 927704530903261265
+    channel_id = "927704530903261265"
 else:
-    channel_id = 924352019026833498
-
-nr_messages = 300
+    channel_id = "924352019026833498"
 
 
     
@@ -41,11 +39,11 @@ async def on_ready():
     shared_songs_by_songID  = load_json(config.shared_songs_by_songID)
     shared_songs_by_msgID   = load_json(config.shared_songs_by_msgID)
 
-    share_edm = bot.get_channel(channel_id)
-    messages = await share_edm.history(limit=nr_messages).flatten()
+    share_edm = bot.get_channel(int(channel_id))
+    messages = await share_edm.history(limit=config.nr_messages).flatten()
 
     print("\n")
-    print(f"Found {len(messages)}/{nr_messages} messages in '{share_edm.name}'")
+    print(f"Found {len(messages)}/{config.nr_messages} messages in '{share_edm.name}'")
     print("\n")
 
     for message in messages:
@@ -73,8 +71,8 @@ async def on_ready():
 
         msg_id      = str(message.id)
 
-        add_values(shared_songs_by_songID, [str(channel_id), song_id], [msg_id])
-        add_values(shared_songs_by_msgID, [msg_id], song_id)
+        add_values(shared_songs_by_songID, [channel_id, song_id], [msg_id])
+        add_values(shared_songs_by_msgID, [channel_id, msg_id], song_id)
 
 
     save_json(config.shared_songs_by_songID, shared_songs_by_songID)

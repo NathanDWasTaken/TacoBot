@@ -27,3 +27,17 @@ class WebsiteType(Enum):
     """
     YouTube = "youtube"
     Spotify = "spotify"
+
+
+class ReturnType(Enum):
+    """
+    Enum for the different results that can happen from a function call (ThreadChannel.moderate_channel)
+    """
+    # When the type of the message is banned
+    MessageTypeBanned       = 1
+
+    # When the type of the message is not supposed to create a thread
+    MessageTypeNotThread    = 2
+
+    # When the MessageType is invalid
+    InvalidMessageType      = 3

@@ -7,7 +7,7 @@ from discord        import Message, Attachment, NotFound, TextChannel
 
 from misc           import add_values, load_json, parse_url, save_json, scold_user, get_spotify_title, standard_reply, scold_user, sp
 from misc           import rem_from_playlist, yt_add_to_playlist, sp_add_to_playlist, fetch_songs_from_playlists
-from enums          import MessageType, WebsiteType
+from enums          import MessageType, WebsiteType, ReturnType
 import config
 
 
@@ -131,7 +131,7 @@ class ThreadChannel:
             self.banned_messages = {*MessageType} - self.thread_messages
 
 
-    def message_type(self, message: Message):
+    def message_type(self, message: Message) -> ShareMessage:
         url = parse_url(message.clean_content)
 
         if url:
@@ -145,20 +145,22 @@ class ThreadChannel:
         return ShareMessage()
 
 
-    async def moderate_channel(self, message: Message):
+    async def moderate_channel(self, message: Message) -> ReturnType:
         """
         moderate the share channel, meaning either create a thread or delete a message when necessary
         """
         share_msg = self.message_type(message)
 
         if share_msg.message_type in self.banned_messages:
+            # TODO send line below to main.py on_message
             await scold_user(message, f"Cannot send {share_msg.message_type.name} messages in this channel", True)
-            return
+
+            return ReturnType.MessageTypeBanned
 
 
         # If the message type is not supposed to create a thread, we skip
         if share_msg.message_type not in self.thread_messages:
-            return
+            return ReturnType.MessageTypeNotThread
 
 
         thread_title   = None
@@ -166,13 +168,15 @@ class ThreadChannel:
             # Only delete messages that are in the banned messages
             delete_msg = share_msg.message_type in self.banned_messages
 
+            # TODO
             await scold_user(message, self.invalid_messages[share_msg.message_type], delete_msg)
-            return
+            return ReturnType.InvalidMessageType
 
 
         if share_msg.message_type == MessageType.Url:
-            url     = share_msg.url
+            share_msg: ShareURL
 
+            url     = share_msg.url
             website = share_msg.website
 
             try:
@@ -262,6 +266,8 @@ class ThreadChannel:
 
 
         elif share_msg.message_type == MessageType.File:
+            share_msg: ShareAttachment
+
             # remove filetype from filename and replace underscores with spaces
             attachment_name = share_msg.attachment.filename.replace("_", " ")
             thread_title    = ".".join(attachment_name.split(".")[:-1])
@@ -274,6 +280,7 @@ class ThreadChannel:
         # Shorten thread title
         if len(thread_title) > 100:
             thread_title = f"{thread_title[:97]}..."
+
 
         await message.create_thread(name=thread_title)
 
@@ -313,35 +320,7 @@ class SharePics(ThreadChannel):
 
 
 
-async def sync_messages(channel: TextChannel):
-    channel_id = str(channel.id)
-    
-    # --------------------------- SYNC MESSAGES ---------------------------
-    # This part of the code goes through all messages in the channel and adds the songs to the local database here as well as the playlists (currently only youtube)
-
-    shared_songs_by_songID      = load_json(config.shared_songs_by_songID)
-    shared_songs_by_msgID       = load_json(config.shared_songs_by_msgID)
-    playlist_items_by_songID    = load_json(config.playlist_items_by_songID)
-
-    # Keep all entries except the ones from the channel we're updating
-    for d in [shared_songs_by_songID, shared_songs_by_msgID, playlist_items_by_songID]:
-        if channel_id in d:
-            d[channel_id] = {}
-
-
-    # All the songs that are in the different playlists (YouTube, Spotify)
-    playlist_songs = fetch_songs_from_playlists()
-
-
-    messages = await channel.history(limit=config.nr_messages).flatten()
-
-    print()
-    print(f"Found {len(messages)}/{config.nr_messages} messages in '{channel.name}'")
-    print()
-
-
-    for message in messages:
-        message: Message
+async def sync_messages(message: Message):
         msg_id = str(message.id)
 
 
@@ -434,20 +413,16 @@ async def sync_messages(channel: TextChannel):
 
 # Key:      discord server ID
 # Value:    list of channels
-thread_channels_per_server = {
+thread_channels = {
     # Main discord server
-    924350783892389939 : [
-        ShareMedia(924352019026833498),
-        SharePics(933058673872367737),
-        SharePics(932736792443092992),
-        ShareSuggestion(927726978948296715),
-        ThreadChannel(935922814869987388)
-    ],
+    924352019026833498: ShareMedia(924352019026833498),
+    933058673872367737: SharePics(933058673872367737),
+    932736792443092992: SharePics(932736792443092992),
+    927726978948296715: ShareSuggestion(927726978948296715),
+    935922814869987388: ThreadChannel(935922814869987388),
 
     # Test discord server
-    927704499194310717 : [
-        ShareMedia(927704530903261265,      test_server=True),
-        ShareSuggestion(937080002674040952, test_server=True),
-        SharePics(937500000391413880,       test_server=True),
-    ]
+    927704530903261265: ShareMedia(927704530903261265,      test_server=True),
+    937080002674040952: ShareSuggestion(937080002674040952, test_server=True),
+    937500000391413880: SharePics(937500000391413880,       test_server=True),
 }

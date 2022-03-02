@@ -4,6 +4,9 @@
     - Can now update the playlist and local databases from past shared messages using "update playlists and databases.py"
     - Can go over all songs in a playlist and checks whether those are still shared in the channel
 
+- Sync
+    - Create Threads when going over older messages as well if they're valid and don't have one yet
+        - use the ThreadChannel.moderate_channel func for syncing
 
 
 - Think of a way to automate testing

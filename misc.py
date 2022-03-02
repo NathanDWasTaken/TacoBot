@@ -201,8 +201,6 @@ def rem_from_playlist(playlistItemID, website: WebsiteType):
         _yt_channel.playlistItems().delete(id = playlistItemID).execute()
 
     elif website == WebsiteType.Spotify:
-        print("Cannot currently remove songs from spotify")
-        
         sp.playlist_remove_all_occurrences_of_items(
             playlist_id = config.spotify_playlist_id,
             items       = [playlistItemID]

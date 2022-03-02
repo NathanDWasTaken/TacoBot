@@ -214,16 +214,18 @@ class ThreadChannel:
 
 
                     try:
-                        if song_id not in playlist_items_by_songID:
+                        if song_id not in playlist_items_by_songID[channel_id]:
 
                             if website == WebsiteType.YouTube:
-                                playlistItem = yt_add_to_playlist(song_id)
-                                playlistItem_ID = playlistItem["id"]
+                                playlistItemID = yt_add_to_playlist(song_id)["id"]
+
 
                             elif website == WebsiteType.Spotify:
-                                ...
+                                sp_add_to_playlist(song_id)
+                                playlistItemID = song_id
 
-                            playlist_items_by_songID[song_id] = [website.value, playlistItem_ID]
+
+                            add_values(playlist_items_by_songID, [channel_id, song_id], [website.value, playlistItemID])
 
                             save_json(config.playlist_items_by_songID, playlist_items_by_songID)
 
@@ -325,8 +327,7 @@ async def sync_messages(channel: TextChannel):
 
     # Keep all entries except the ones from the channel we're updating
     for d in [shared_songs_by_songID, shared_songs_by_msgID, playlist_items_by_songID]:
-        if channel_id in d:
-            d[channel_id] = {}
+        d[channel_id] = {}
 
 
     # All the songs that are in the different playlists (YouTube, Spotify)

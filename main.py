@@ -85,12 +85,12 @@ async def on_raw_message_delete(payload: RawMessageDeleteEvent):
         return
 
     shared_songs_by_songID = load_json(config.shared_songs_by_songID)
-    shared_songs_by_msgID  = load_json(config.shared_songs_by_msgID)
+
+    if msg_id in shared_songs_by_msgID[channel_id]:
+        shared_songs_by_msgID  = load_json(config.shared_songs_by_msgID)
 
 
-    if msg_id in shared_songs_by_msgID:
         song_id = shared_songs_by_msgID[channel_id][msg_id]
-
 
         shared_songs_by_songID[channel_id][song_id].remove(msg_id)
 
@@ -100,27 +100,23 @@ async def on_raw_message_delete(payload: RawMessageDeleteEvent):
             playlist_items_by_songID = load_json(config.playlist_items_by_songID)
 
             # Which also means we should remove the song from the playlist
-            website_name, playlistItemID = playlist_items_by_songID[song_id]
+            website_name, playlistItemID = playlist_items_by_songID[channel_id][song_id]
             website = WebsiteType(website_name)
 
             rem_from_playlist(playlistItemID, website=website)
 
             del shared_songs_by_songID[channel_id][song_id]
-            del playlist_items_by_songID[song_id]
+            del playlist_items_by_songID[channel_id][song_id]
 
             save_json(config.playlist_items_by_songID, playlist_items_by_songID)
-            
-            ...
 
-        
         del shared_songs_by_msgID[channel_id][msg_id]
-
 
         save_json(config.shared_songs_by_songID, shared_songs_by_songID)
         save_json(config.shared_songs_by_msgID, shared_songs_by_msgID)
 
 
-    channel = await bot.fetch_channel(channel_id)
+    channel: TextChannel = await bot.fetch_channel(channel_id)
     thread  = channel.get_thread(int(msg_id))
     if type(thread) == Thread:
         await thread.delete()

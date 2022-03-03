@@ -96,10 +96,10 @@ def add_video_to_playlist(youtube, videoID, playlistID):
 
 
 if __name__ == '__main__':
-    # youtube = get_authenticated_service()
+    youtube = get_authenticated_service()
 
-    # with open(credentials_file, "wb") as file:
-    #     pickle.dump(youtube, file)
+    with open(credentials_file, "wb") as file:
+        pickle.dump(youtube, file)
 
     with open(credentials_file, "rb") as file:
         youtube = pickle.load(file)

@@ -5,7 +5,8 @@ from discord.ext    import commands
 
 
 from misc           import get_api_key, load_json, save_json, rem_from_playlist
-from classes        import ThreadChannel, WebsiteType, sync_messages, thread_channels_per_server
+from misc           import fetch_songs_from_playlists, rem_from_playlist
+from classes        import ShareMedia, SharePics, ShareSuggestion, ThreadChannel, WebsiteType, thread_channels
 import config
 
 
@@ -31,23 +32,57 @@ def handle_command(message: Message):
 
 
 
-# Create all ThreadChannel Instances
-thread_channels: Dict[int, ThreadChannel] = {}
-for channel_list in thread_channels_per_server.values():
-    for channel in channel_list:
-        channel: TextChannel
-        thread_channels[channel.id] = channel
-
-
-
 bot = commands.Bot(command_prefix=config.command_prefix, max_messages=2000)
 
     
 @bot.event
 async def on_ready():
-    channel = bot.get_channel(int(config.playlist_channel))
+    channel         = bot.get_channel(int(config.playlist_channel))
 
-    await sync_messages(channel)
+    
+    channel_id      = str(channel.id)
+    thread_channel: ThreadChannel = thread_channels[channel.id]
+    
+    # --------------------------- SYNC MESSAGES ---------------------------
+    # This part of the code goes through all messages in the channel and adds the songs to the local database here as well as the playlists (currently only youtube)
+
+    shared_songs_by_songID      = load_json(config.shared_songs_by_songID)
+    shared_songs_by_msgID       = load_json(config.shared_songs_by_msgID)
+    playlist_items_by_songID    = load_json(config.playlist_items_by_songID)
+
+    # Keep all entries except the ones from the channel we're updating
+    for d in [shared_songs_by_songID, shared_songs_by_msgID, playlist_items_by_songID]:
+        d[channel_id] = {}
+
+    save_json(config.shared_songs_by_songID, shared_songs_by_songID)
+    save_json(config.shared_songs_by_msgID, shared_songs_by_msgID)
+    save_json(config.playlist_items_by_songID, playlist_items_by_songID)
+
+
+    # All the songs that are in the different playlists (YouTube, Spotify)
+    playlist_songs = fetch_songs_from_playlists()
+
+
+    messages = await channel.history(limit=config.nr_messages).flatten()
+
+    print()
+    print(f"Found {len(messages)}/{config.nr_messages} messages in '{channel.name}'")
+    print()
+
+
+    for message in messages:
+        await thread_channel.moderate_channel(message, syncing=True)
+
+
+
+    # --------------------------- REMOVE EXCESS SONGS FROM PLAYLIST ---------------------------
+    # This part of the code goes through all songs in a playlist and makes sure those songs are still posted at least once in the channel
+    # If there is no message with the song, the song is removed from the playlist
+
+    for videoID, (website, playlistItemID) in playlist_songs.items():
+        if not videoID in playlist_items_by_songID[channel_id]:
+            rem_from_playlist(website, playlistItemID, videoID)
+
 
     print(f'We have logged in as {bot.user}')
 
@@ -55,6 +90,9 @@ async def on_ready():
 @bot.event
 async def on_message(message: Message):
     if message.author == bot.user:
+        if message.is_system() and message.type.name == "thread_created" and message.channel.id in thread_channels:
+            await message.delete()
+
         return
 
 
@@ -67,7 +105,7 @@ async def on_message(message: Message):
         return
 
 
-    thread_channel = thread_channels[message.channel.id]
+    thread_channel: ThreadChannel = thread_channels[message.channel.id]
 
     await thread_channel.moderate_channel(message)
 
@@ -101,7 +139,7 @@ async def on_raw_message_delete(payload: RawMessageDeleteEvent):
             website_name, playlistItemID = playlist_items_by_songID[channel_id][song_id]
             website = WebsiteType(website_name)
 
-            rem_from_playlist(playlistItemID, website=website)
+            rem_from_playlist(website, playlistItemID, song_id)
 
             del shared_songs_by_songID[channel_id][song_id]
             del playlist_items_by_songID[channel_id][song_id]

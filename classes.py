@@ -1,12 +1,11 @@
 from urllib.parse   import urlparse
-from typing         import Set
+from typing         import Dict, List, Set
 from pytube         import YouTube
 
-from discord        import Message, Attachment, NotFound, TextChannel
+from discord        import Message, Attachment, NotFound
 
 
-from misc           import add_values, load_json, parse_url, save_json, scold_user, get_spotify_title, standard_reply, scold_user, sp
-from misc           import rem_from_playlist, yt_add_to_playlist, sp_add_to_playlist, fetch_songs_from_playlists
+from misc           import add_to_playlist, add_values, load_json, parse_url, path_exists, save_json, scold_user, get_spotify_title, standard_reply, scold_user, sp
 from enums          import MessageType, WebsiteType
 import config
 
@@ -147,14 +146,18 @@ class ThreadChannel:
         return ShareMessage()
 
 
-    async def moderate_channel(self, message: Message):
+    async def moderate_channel(self, message: Message, syncing = False):
         """
         moderate the share channel, meaning either create a thread or delete a message when necessary
+
+        syncing: bool = when this is true, the bot will not send any replies
         """
         share_msg = self.message_type(message)
 
         if share_msg.message_type in self.banned_messages:
-            await scold_user(message, f"Cannot send {share_msg.message_type.name} messages in this channel", True)
+            if not syncing:
+                await scold_user(message, f"Cannot send {share_msg.message_type.name} messages in this channel", True)
+
             return
 
 
@@ -168,7 +171,9 @@ class ThreadChannel:
             # Only delete messages that are in the banned messages
             delete_msg = share_msg.message_type in self.banned_messages
 
-            await scold_user(message, self.invalid_messages[share_msg.message_type], delete_msg)
+            if not syncing:
+                await scold_user(message, self.invalid_messages[share_msg.message_type], delete_msg)
+
             return
 
 
@@ -195,53 +200,54 @@ class ThreadChannel:
                 channel_id  = str(message.channel.id)
                 msg_id      = str(message.id)
 
-                shared_songs_by_songID = load_json(config.shared_songs_by_songID)
-                shared_songs_by_msgID  = load_json(config.shared_songs_by_msgID)
+                shared_songs_by_songID      = load_json(config.shared_songs_by_songID)
+                shared_songs_by_msgID       = load_json(config.shared_songs_by_msgID)
+                playlist_items_by_songID    = load_json(config.playlist_items_by_songID)
 
                 # Check whether the song has already been shared
-                try:
-                    prev_message_ids = shared_songs_by_songID[channel_id][song_id]
+                if path_exists(shared_songs_by_songID, [channel_id, song_id]):
+                    prev_message_ids: List = shared_songs_by_songID[channel_id][song_id]
 
-                    prev_message: Message = await message.channel.fetch_message(prev_message_ids[0])
-                    text = f"The song '{thread_title}' was already shared here before by {prev_message.author.display_name} (See replied message)"
+                    # 1 by 1 we go over all the message ids that are supposed to have the song and try to retreive the messages
+                    # If the NotFound error is thrown that means that the message has been deleted, in which case we remove it from the database
+                    for prev_message_id in prev_message_ids:
+                        try:
+                            prev_message: Message = await message.channel.fetch_message(prev_message_id)
+                            break
 
-                    await standard_reply(message, text, delete_delay=None, reference=prev_message, mention_author=False)
+                        except NotFound:
+                            prev_message_ids.remove(prev_message_id)
+                            del shared_songs_by_msgID[channel_id][prev_message_id]
+
+
+                    # if there are no more messages with this song we remove it
+                    if not prev_message_ids:
+                        del shared_songs_by_songID[channel_id][song_id]
+                        del playlist_items_by_songID[channel_id][song_id]
+                        
+                        save_json(config.playlist_items_by_songID, playlist_items_by_songID)
+
+                    else:
+                        text = f"This song has already been shared here before (See replied message)"
+
+                        if not syncing:
+                            await standard_reply(message, text, delete_delay=None, reference=prev_message, mention_author=False)
 
 
                 # The song has not yet been shared yet
-                except KeyError:
+                else:
                     
-                    # Add to playlist
-                    playlist_items_by_songID = load_json(config.playlist_items_by_songID)
-
-
-                    try:
-                        if song_id not in playlist_items_by_songID[channel_id]:
-
-                            if website == WebsiteType.YouTube:
-                                playlistItemID = yt_add_to_playlist(song_id)["id"]
-
-
-                            elif website == WebsiteType.Spotify:
-                                sp_add_to_playlist(song_id)
-                                playlistItemID = song_id
-
-
-                            add_values(playlist_items_by_songID, [channel_id, song_id], [website.value, playlistItemID])
-
-                            save_json(config.playlist_items_by_songID, playlist_items_by_songID)
-
-                    except:
+                    added_to_playlist = add_to_playlist(song_id, channel_id, website)
+                    
+                    # If adding to playlist failed:
+                    if not added_to_playlist:
                         text = f"Was unable to add this song to the {website.name} playlist: {song_id}"
 
                         print(text)
-                        await standard_reply(message, text, delete_delay=config.delete_delay, mention_author=True)
 
+                        if not syncing:
+                            await standard_reply(message, text, delete_delay=config.delete_delay, mention_author=True)
 
-                except NotFound:
-                    # When this is raised, it means that the local save of all the shared songs still has this entry, the message was however deleted
-                    # In this case we should remove the entry from the local shared songs
-                    ...
 
 
                 # We still have to add the message ID to the list of shared songs since we don't actually delete the message, we leave that up to the user to do
@@ -260,7 +266,10 @@ class ThreadChannel:
                 print()
 
                 reply = f"Something went wrong getting the song title from {website.value}. \nYou most likely didn't send a valid song!"
-                await standard_reply(message, reply, delete_delay=config.delete_delay + 2)
+
+                if not syncing:
+                    await standard_reply(message, reply, delete_delay=config.delete_delay + 2)
+
                 return
 
 
@@ -279,7 +288,10 @@ class ThreadChannel:
         if len(thread_title) > 100:
             thread_title = f"{thread_title[:97]}..."
 
-        await message.create_thread(name=thread_title)
+        
+
+        if not message.channel.get_thread(message.id):
+            await message.create_thread(name=thread_title)
 
 
         
@@ -315,142 +327,18 @@ class SharePics(ThreadChannel):
 
 
 
-
-
-async def sync_messages(channel: TextChannel):
-    channel_id = str(channel.id)
-    
-    # --------------------------- SYNC MESSAGES ---------------------------
-    # This part of the code goes through all messages in the channel and adds the songs to the local database here as well as the playlists (currently only youtube)
-
-    shared_songs_by_songID      = load_json(config.shared_songs_by_songID)
-    shared_songs_by_msgID       = load_json(config.shared_songs_by_msgID)
-    playlist_items_by_songID    = load_json(config.playlist_items_by_songID)
-
-    # Keep all entries except the ones from the channel we're updating
-    for d in [shared_songs_by_songID, shared_songs_by_msgID, playlist_items_by_songID]:
-        d[channel_id] = {}
-
-
-    # All the songs that are in the different playlists (YouTube, Spotify)
-    playlist_songs = fetch_songs_from_playlists()
-
-
-    messages = await channel.history(limit=config.nr_messages).flatten()
-
-    print()
-    print(f"Found {len(messages)}/{config.nr_messages} messages in '{channel.name}'")
-    print()
-
-
-    for message in messages:
-        message: Message
-        msg_id = str(message.id)
-
-
-        # --------------- SYNC LOCAL DATABASE TO MESSAGE ---------------
-        url = parse_url(message.clean_content)
-
-        if url is None:
-            print(f"Message does not contain url: '{message.clean_content}'")
-            continue
-
-        share_msg   = ShareURL(url)
-        website     = share_msg.website
-
-        if msg_id not in shared_songs_by_msgID[channel_id]:
-            if share_msg.message_type == MessageType.InvalidUrl:
-                print(f"Could not ID the following url: '{share_msg.url}'")
-                continue
-
-
-            # Get song ID and add the song to the local databases
-
-            if website == WebsiteType.YouTube:
-                song_id = YouTube(url).video_id
-
-
-            elif website == WebsiteType.Spotify:
-                song_id = sp.track(url)["id"]
-
-
-            else:
-                print("Invalid website! Can't get necessary ID!")
-                continue
-
-
-            add_values(shared_songs_by_songID, [channel_id, song_id], [msg_id])
-            add_values(shared_songs_by_msgID, [channel_id, msg_id], song_id)
-
-        else:
-            song_id = shared_songs_by_msgID[channel_id][msg_id]
-            print("This message is already in the 'shared_songs_by_msgID.json' database!")
-
-
-        # --------------- SYNC REMOVE PLAYLIST TO MESSAGE ---------------
-        if song_id not in playlist_items_by_songID or song_id not in playlist_songs:
-
-            # If the song is already in a playlist we fetch the playlistItemID here
-            if song_id in playlist_songs:
-                playlistItemID = playlist_songs[song_id][1]
-            
-
-            # If it isn't we add it
-            else:
-                if website == WebsiteType.YouTube:
-                    playlistItemID = yt_add_to_playlist(song_id)["id"]
-                
-                elif website == WebsiteType.Spotify:
-                    sp_add_to_playlist(song_id)
-                    playlistItemID = song_id
-
-
-                else:
-                    print("Can't add song to playlist from this website!")
-                    continue
-
-
-                playlist_songs[song_id]         = [website.value, playlistItemID]
-
-            add_values(playlist_items_by_songID, [channel_id, song_id], [website.value, playlistItemID])
-
-        else:
-            print("Song Already in Playlist!")
-
-
-
-    save_json(config.shared_songs_by_songID, shared_songs_by_songID)
-    save_json(config.shared_songs_by_msgID, shared_songs_by_msgID)
-    save_json(config.playlist_items_by_songID, playlist_items_by_songID)
-
-
-
-    # --------------------------- REMOVE EXCESS SONGS FROM PLAYLIST ---------------------------
-    # This part of the code goes through all songs in a playlist and makes sure those songs are still posted at least once in the channel
-    # If there is no message with the song, the song is removed from the playlist
-
-    for videoID, (website, playlistItemID) in playlist_songs.items():
-        if not videoID in playlist_items_by_songID[channel_id]:
-            rem_from_playlist(playlistItemID, website=website)
-
-
-
 # Key:      discord server ID
 # Value:    list of channels
-thread_channels_per_server = {
+thread_channels = {
     # Main discord server
-    924350783892389939 : [
-        ShareMedia(924352019026833498),
-        SharePics(933058673872367737),
-        SharePics(932736792443092992),
-        ShareSuggestion(927726978948296715),
-        ThreadChannel(935922814869987388)
-    ],
+    924352019026833498: ShareMedia(924352019026833498),
+    933058673872367737: SharePics(933058673872367737),
+    932736792443092992: SharePics(932736792443092992),
+    927726978948296715: ShareSuggestion(927726978948296715),
+    935922814869987388: ThreadChannel(935922814869987388),
 
     # Test discord server
-    927704499194310717 : [
-        ShareMedia(927704530903261265,      test_server=True),
-        ShareSuggestion(937080002674040952, test_server=True),
-        SharePics(937500000391413880,       test_server=True),
-    ]
+    927704530903261265: ShareMedia(927704530903261265,      test_server=True),
+    937080002674040952: ShareSuggestion(937080002674040952, test_server=True),
+    937500000391413880: SharePics(937500000391413880,       test_server=True),
 }

@@ -3,6 +3,7 @@ import os, time, json, re, pickle
 import spotipy
 from spotipy.oauth2     import SpotifyOAuth
 from discord.message    import Message
+from typing             import List
 
 from enums              import WebsiteType
 import config
@@ -83,6 +84,21 @@ def add_values(d: dict, keys: list, value):
     d[key] = recursion_result
     return d
 
+
+def path_exists(d: dict, path : List):
+    """
+    Checks whether the given path exists in the dict
+    """
+    # if the path is empty we hit our base case
+    if not path:
+        return True
+
+    key = path.pop(0)
+
+    if key in d:
+        return path_exists(d[key], path)
+
+    return False
 
 # --------------------------------- Pycord ---------------------------------
 
@@ -177,40 +193,64 @@ with open(config.yt_cred_file, "rb") as file:
     _yt_channel = pickle.load(file)
 
 
-def sp_add_to_playlist(songID):
-    sp.user_playlist_add_tracks(
-        user        = config.spotify_client_id, 
-        playlist_id = config.spotify_playlist_id, 
-        tracks      = [songID]
-    )
 
 
-def yt_add_to_playlist(videoID, playlistID=config.youtube_playlist_id):
-    body = {
-        'snippet': {
-            'playlistId': playlistID, 
-            'resourceId': {
-                'kind': 'youtube#video',
-                'videoId': videoID
-            }
-        }
-    }
+def add_to_playlist(song_id: str, channel_id: str, website: WebsiteType):
+    playlist_items_by_songID    = load_json(config.playlist_items_by_songID)
 
-    return _yt_channel.playlistItems().insert(
-        part="snippet",
-        body=body
-    ).execute()
+    try:
+        if song_id not in playlist_items_by_songID[channel_id]:
+
+            if website == WebsiteType.YouTube:
+                body = {
+                    'snippet': {
+                        'playlistId': config.youtube_playlist_id, 
+                        'resourceId': {
+                            'kind': 'youtube#video',
+                            'videoId': song_id
+                        }
+                    }
+                }
+
+                playlistItem = _yt_channel.playlistItems().insert(
+                    part="snippet",
+                    body=body
+                ).execute()
+                
+                playlistItemID = playlistItem["id"]
 
 
+            elif website == WebsiteType.Spotify:
+                track_index = sp.playlist(config.spotify_playlist_id)["tracks"]["total"]
 
-def rem_from_playlist(playlistItemID, website: WebsiteType):
+                sp.user_playlist_add_tracks(
+                    user        = config.spotify_client_id, 
+                    playlist_id = config.spotify_playlist_id, 
+                    tracks      = [song_id]
+                )
+
+                playlistItemID = track_index
+
+
+            add_values(playlist_items_by_songID, [channel_id, song_id], [website.value, playlistItemID])
+            save_json(config.playlist_items_by_songID, playlist_items_by_songID)
+
+            return True
+
+    except:
+        return False
+
+
+def rem_from_playlist(website: WebsiteType, playlistItemID, song_id=None):
     if website == WebsiteType.YouTube:
         _yt_channel.playlistItems().delete(id = playlistItemID).execute()
 
     elif website == WebsiteType.Spotify:
-        sp.playlist_remove_all_occurrences_of_items(
+        track_uri = sp.track(track_id=song_id)["uri"]
+
+        sp.playlist_remove_specific_occurrences_of_items(
             playlist_id = config.spotify_playlist_id,
-            items       = [playlistItemID]
+            items       = [{"uri" : track_uri, "positions" : [playlistItemID]}]
         )
 
 
@@ -257,7 +297,7 @@ def fetch_songs_from_playlists(rem_duplicates=True):
             if videoID in playlistItems:
 
                 if rem_duplicates:
-                    rem_from_playlist(playlistItemID, WebsiteType.YouTube)
+                    rem_from_playlist(WebsiteType.YouTube, playlistItemID)
 
                 continue
 
@@ -277,23 +317,24 @@ def fetch_songs_from_playlists(rem_duplicates=True):
             offset      = offset
         )
 
-        offset += config.spotify_request_size
-        sp_next = tracks["next"]
 
-
-        for item in tracks["items"]:
+        for index, item in enumerate(tracks["items"]):
             trackID = item["track"]["id"]
+
+            track_index = offset + index
 
             if trackID in playlistItems:
                 # The track is already in this dict it means there are duplicated -> remove them
 
                 if rem_duplicates:
-                    rem_from_playlist(trackID, WebsiteType.Spotify)
-                    sp_add_to_playlist(trackID)
+                    rem_from_playlist(WebsiteType.Spotify, track_index, trackID)
 
                 continue
 
-            playlistItems[trackID] = [WebsiteType.Spotify, trackID]
+            playlistItems[trackID] = [WebsiteType.Spotify, track_index]
+
+        offset += config.spotify_request_size
+        sp_next = tracks["next"]
 
 
     return playlistItems

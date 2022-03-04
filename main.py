@@ -1,12 +1,9 @@
-from typing import Dict
-
 from discord        import Message, RawMessageDeleteEvent, TextChannel, Thread
 from discord.ext    import commands
 
 
-from misc           import get_api_key, load_json, save_json, rem_from_playlist
-from misc           import fetch_songs_from_playlists, rem_from_playlist
-from classes        import ShareMedia, SharePics, ShareSuggestion, ThreadChannel, WebsiteType, thread_channels
+from misc           import get_api_key, load_json, path_exists, save_json, rem_from_playlist
+from classes        import ThreadChannel, WebsiteType, thread_channels
 import config
 
 
@@ -37,7 +34,7 @@ bot = commands.Bot(command_prefix=config.command_prefix, max_messages=2000)
     
 @bot.event
 async def on_ready():
-    channel         = bot.get_channel(int(config.playlist_channel))
+    channel: TextChannel = bot.get_channel(int(config.playlist_channel))
 
     
     channel_id      = str(channel.id)
@@ -54,13 +51,27 @@ async def on_ready():
     for d in [shared_songs_by_songID, shared_songs_by_msgID, playlist_items_by_songID]:
         d[channel_id] = {}
 
+
+
+    # SYNC LOCAL DATABASE playlist_items_by_songID TO THE PLAYLISTS
+    
+    # Add all songs from the playlists to the database
+    for songID, (website, playlistItemID) in thread_channel.playlist_songs.items():
+        website: WebsiteType
+
+        # We do not have it in our local database yet, add it
+        if not songID in playlist_items_by_songID[channel_id]:
+            playlist_items_by_songID[channel_id][songID] = [website.name, playlistItemID]
+        
+
+        # It's already in our local
+        else:
+            print("THIS SHOULD NOT BE A THING")
+
+
     save_json(config.shared_songs_by_songID, shared_songs_by_songID)
     save_json(config.shared_songs_by_msgID, shared_songs_by_msgID)
     save_json(config.playlist_items_by_songID, playlist_items_by_songID)
-
-
-    # All the songs that are in the different playlists (YouTube, Spotify)
-    playlist_songs = fetch_songs_from_playlists()
 
 
     messages = await channel.history(limit=config.nr_messages).flatten()
@@ -74,17 +85,23 @@ async def on_ready():
         await thread_channel.moderate_channel(message, syncing=True)
 
 
-
     # --------------------------- REMOVE EXCESS SONGS FROM PLAYLIST ---------------------------
     # This part of the code goes through all songs in a playlist and makes sure those songs are still posted at least once in the channel
     # If there is no message with the song, the song is removed from the playlist
+    thread_channel.update_playlist_songs()
 
-    for videoID, (website, playlistItemID) in playlist_songs.items():
-        if not videoID in playlist_items_by_songID[channel_id]:
-            rem_from_playlist(website, playlistItemID, videoID)
+    shared_songs_by_songID      = load_json(config.shared_songs_by_songID)
+    shared_songs_by_msgID       = load_json(config.shared_songs_by_msgID)
+    playlist_items_by_songID    = load_json(config.playlist_items_by_songID)
 
 
-    print(f'We have logged in as {bot.user}')
+    for songID, (website, playlistItemID) in thread_channel.playlist_songs.items():
+        # If song is in playlist but not local (which means also not in discord since the databases have been synced)
+        if not path_exists(shared_songs_by_songID, [channel_id, songID]):
+            rem_from_playlist(website, playlistItemID, song_id=songID)
+
+
+    print(f'{bot.user} Successfully Synced!!')
 
 
 @bot.event

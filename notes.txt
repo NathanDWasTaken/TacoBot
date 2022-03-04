@@ -5,8 +5,9 @@
     - Can go over all songs in a playlist and checks whether those are still shared in the channel
 
 - Sync
-    - Create Threads when going over older messages as well if they're valid and don't have one yet
-        - use the ThreadChannel.moderate_channel func for syncing
+    - Threads (getting older threads currently broken)
+        - Creates Threads for older valid messages when syncing
+        - Have bot go over all threads in the channel and remove any that don't have a message anymore
 
 
 - Think of a way to automate testing

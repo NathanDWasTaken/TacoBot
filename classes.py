@@ -1,11 +1,12 @@
+from types import NoneType
 from urllib.parse   import urlparse
-from typing         import Dict, List, Set
+from typing         import List, Set
 from pytube         import YouTube
 
 from discord        import Message, Attachment, NotFound
 
 
-from misc           import add_to_playlist, add_values, load_json, parse_url, path_exists, save_json, scold_user, get_spotify_title, standard_reply, scold_user, sp
+from misc           import add_to_playlist, add_values, fetch_songs_from_playlists, load_json, parse_url, path_exists, save_json, scold_user, get_spotify_title, standard_reply, scold_user, sp
 from enums          import MessageType, WebsiteType
 import config
 
@@ -124,12 +125,23 @@ class ThreadChannel:
 
         # Error messages for the different invalid message types
         self.invalid_messages = {
-            MessageType.InvalidFile : "Only audio and video files are allowed!",
+            MessageType.InvalidFile     : "Only audio and video files are allowed!",
             MessageType.InvalidUrl      : f"This url is either not valid or from an unsupported website: {', '.join([site.name for site in self.allowed_websites])}!",
         }
 
         if self.banned_msgs_opposite:
             self.banned_messages = {*MessageType} - self.thread_messages
+
+
+        self.update_playlist_songs()
+
+        
+
+    def update_playlist_songs(self):
+        """
+        Updates the local dictionary which stores all the songs in all playlists of the different platforms 
+        """
+        self.playlist_songs = fetch_songs_from_playlists()
 
 
     def message_type(self, message: Message):
@@ -233,9 +245,9 @@ class ThreadChannel:
                         if not syncing:
                             await standard_reply(message, text, delete_delay=None, reference=prev_message, mention_author=False)
 
-
-                # The song has not yet been shared yet
-                else:
+                
+                # The song is neither in a local database nor is it in any playlist
+                elif song_id not in self.playlist_songs:
                     
                     added_to_playlist = add_to_playlist(song_id, channel_id, website)
                     
@@ -289,9 +301,11 @@ class ThreadChannel:
             thread_title = f"{thread_title[:97]}..."
 
         
-
-        if not message.channel.get_thread(message.id):
+        # For some reason message.channel.get_thread seems to always return None
+        # When I create the thread in a try/except block the code is stuck there for a very long time
+        if not syncing:
             await message.create_thread(name=thread_title)
+
 
 
         
@@ -303,6 +317,7 @@ class ShareMedia(ThreadChannel):
 
     thread_messages     = {MessageType.Url, MessageType.File}
     banned_messages     = {MessageType.Normal, MessageType.InvalidFile}
+
 
 
 

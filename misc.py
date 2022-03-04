@@ -155,7 +155,8 @@ sp = spotipy.Spotify(
         client_id       = config.spotify_client_id,
         client_secret   = config.spotify_key,
         scope           = config.spotify_scopes,
-        redirect_uri    = "http://localhost:8040"
+        redirect_uri    = "http://localhost:8040",
+        open_browser    = False
     )
 )
 
@@ -328,6 +329,7 @@ def fetch_songs_from_playlists(rem_duplicates=True):
 
                 if rem_duplicates:
                     rem_from_playlist(WebsiteType.Spotify, track_index, trackID)
+                    offset -= 1
 
                 continue
 

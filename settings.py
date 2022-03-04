@@ -2,7 +2,7 @@
 # Params here can be changed
 
 
-testing                 = True
+testing                 = False
 
 
 env_filename            = "secrets.env"

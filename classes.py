@@ -1,4 +1,3 @@
-from types import NoneType
 from urllib.parse   import urlparse
 from typing         import List, Set
 from pytube         import YouTube

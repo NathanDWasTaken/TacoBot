@@ -1,5 +1,8 @@
 from enum import Enum
 
+# We need to use this since (int|str) only works in 3.10 up
+from typing import Union
+
 
 class MessageType(Enum):
 	"""
@@ -46,10 +49,10 @@ class ReactionType(Enum):
 class MyEmoji:
 	# id is either an id to a custom emoji or a unicode emoji
 	# The reason it can also be a unicode emoji is so that we can simply compare this emoji's ID with any reactions a message has
-	id: (int|str)
+	id: Union(int, str)
 
 	# Name of the emoji in case it's a custom emoji, or None in case it's a unicode emoji
-	name: (str|None)
+	name: Union(str, None)
 
 	def __init__(self, id, name=None, animated=False) -> None:
 		self.id 		= id
@@ -59,7 +62,7 @@ class MyEmoji:
 		self.full_id	= self.get_full_id()
 
 
-	def get_full_id(self, id:(int|str)=None, name:str=None, animated:bool=None):
+	def get_full_id(self, id:Union(int, str)=None, name:str=None, animated:bool=None):
 		if id is None:
 			id = self.id
 

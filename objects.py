@@ -44,7 +44,14 @@ class ReactionType(Enum):
 
 
 class MyEmoji:
-	def __init__(self, id, name, animated=False) -> None:
+	# id is either an id to a custom emoji or a unicode emoji
+	# The reason it can also be a unicode emoji is so that we can simply compare this emoji's ID with any reactions a message has
+	id: (int|str)
+
+	# Name of the emoji in case it's a custom emoji, or None in case it's a unicode emoji
+	name: (str|None)
+
+	def __init__(self, id, name=None, animated=False) -> None:
 		self.id 		= id
 		self.name		= name
 		self.animated	= animated
@@ -52,9 +59,14 @@ class MyEmoji:
 		self.full_id	= self.get_full_id()
 
 
-	def get_full_id(self, id:int=None, name:str=None, animated:bool=None):
+	def get_full_id(self, id:(int|str)=None, name:str=None, animated:bool=None):
 		if id is None:
 			id = self.id
+
+		# if id is a str that means it's a unicode emoji
+		if type(id) == str:
+			return id
+
 
 		if name is None:
 			name = self.name

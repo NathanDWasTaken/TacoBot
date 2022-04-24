@@ -166,7 +166,14 @@ class ThreadChannel:
 
         if reactions_to_add is not None:
             # set of reactions this message has
-            existing_reactions_ids = set(reaction.emoji.id for reaction in message.reactions)
+            existing_reactions_ids = set()
+
+            for reaction in message.reactions:
+                if type(reaction.emoji) == str:
+                    existing_reactions_ids.add(reaction.emoji)
+
+                else:
+                    existing_reactions_ids.add(reaction.emoji.id)
 
             # loop over all reactions to be added
             for emoji_type in reactions_to_add:

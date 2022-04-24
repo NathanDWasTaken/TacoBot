@@ -56,43 +56,57 @@ def get_website_type(url):
     return WebsiteType.Other
 
 
-def add_values(d: dict, keys: list, value):
-    """
-    Recursively adds nested dictionaries using the given keys and value
-    """
+def add_values(d: dict, keys: list, value, replace=False):
+	"""
+	Recursively adds nested dictionaries using the given keys and value.
 
-    key = keys.pop(0)
+	If replace is False, and the entry already exists and is different from the given entry then an error is raised
+	"""
 
-
-    # Base case, when we've gone over all keys we return
-    if len(keys) == 0:
-        # If there is not yet an entry for this key we simply make add the key value pair
-        if key not in d:
-            d[key] = value
-
-        # However if the key is already in the dictionary, we check whether the value is a list. If it is a list we can append the current value to it
-        elif type(d[key]) == list:
-
-            if type(value) == list:
-                d[key] += value
-            else:
-                d[key].append(value)
-
-        else:
-            raise Exception("Unable to insert the value, the entry already exists and is not a list")
-
-        return d
+	key = keys.pop(0)
 
 
-    elif key not in d:
-        recursion_result = add_values({}, keys, value)
-    
-    else:
-        recursion_result = add_values(d[key], keys, value)
+	# Base case, when we've gone over all keys we return
+	if len(keys) == 0:
+		# If there is not yet an entry for this key we simply make add the key value pair
+		if key not in d:
+			d[key] = value
+
+		# However if the key is already in the dictionary, we check whether the value is a list. If it is a list we can append the current value to it
+		elif type(d[key]) == list:
+
+			if type(value) == list:
+				d[key] += value
+			else:
+				d[key].append(value)
 
 
-    d[key] = recursion_result
-    return d
+		# Ignore if the existing and provided entries are the same
+		elif d[key] == value:
+			pass
+
+
+		elif replace:
+			# Replace the existing value by the provided value if replace True
+			d[key] = value
+		
+
+		else:
+			raise Exception("Unable to insert the value, the entry already exists and is not a list")
+
+
+		return d
+
+
+	elif key not in d:
+		recursion_result = add_values({}, keys, value)
+	
+	else:
+		recursion_result = add_values(d[key], keys, value)
+
+
+	d[key] = recursion_result
+	return d
 
 
 def path_exists(d: dict, path : List):

@@ -2,7 +2,7 @@
 # Params here can be changed
 
 
-testing                 = True
+testing                 = False
 
 
 env_filename            = "secrets.env"
@@ -25,7 +25,7 @@ command_prefix          = "$"
 delete_delay            = 5
 
 # Number of messages the bot will fetch from a channel
-nr_messages             = 300
+nr_messages             = 1000
 
 spotify_scopes          = ["playlist-modify-private", "playlist-modify-public", "playlist-read-private"]
 

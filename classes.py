@@ -5,7 +5,7 @@ from discord        import Message, Attachment, NotFound
 
 
 from misc           import get_website_type, add_to_playlist, add_values, fetch_songs_from_playlists, load_json, parse_url, path_exists, save_json, scold_user, get_spotify_title, standard_reply, scold_user, sp
-from objects        import MessageType, MyEmoji, ReactionType, WebsiteType, emoji_ids_per_server
+from objects        import MessageType, MyEmoji, ReactionType, WebsiteType, emoji_ids_per_server, share_song_reactions
 import config
 
 
@@ -174,7 +174,7 @@ class ThreadChannel:
 
                 # add reaction if this message does not have this particular reaction
                 if emoji.id not in existing_reactions_ids:
-                    await message.add_reaction(emoji.full_id)                    
+                    await message.add_reaction(emoji.full_id)
 
 
         # If the message type is not supposed to create a thread, we skip
@@ -266,7 +266,7 @@ class ThreadChannel:
 
 
 
-                # We still have to add the message ID to the list of shared songs since we don't actually delete the message, we leave that up to the user to do
+                # We still have to add the message ID to the list of shared songs since we don't actually delete the message, we leave that up to the user to do this
                 add_values(shared_songs_by_songID, [channel_id, song_id], [msg_id])
                 add_values(shared_songs_by_msgID, [channel_id, msg_id], song_id)
 
@@ -346,19 +346,18 @@ class SharePics(ThreadChannel):
     banned_msgs_opposite = True
 
 
-
 # Key:      discord channel ID
 # Value:    channel
 thread_channels = {
     # Main discord server
-    924352019026833498: ShareMedia(924352019026833498),
+    924352019026833498: ShareMedia(924352019026833498,  reaction_messages={MessageType.Any : share_song_reactions}),
     933058673872367737: SharePics(933058673872367737),
     932736792443092992: SharePics(932736792443092992),
     927726978948296715: ShareSuggestion(927726978948296715),
     935922814869987388: ThreadChannel(935922814869987388),
 
     # Test discord server
-    927704530903261265: ShareMedia(927704530903261265,      test_server=True, reaction_messages={MessageType.Any : [ReactionType.FIRE, ReactionType.YES, ReactionType.MAYBE, ReactionType.NO]}),
+    927704530903261265: ShareMedia(927704530903261265,      test_server=True, reaction_messages={MessageType.Any : share_song_reactions}),
     937080002674040952: ShareSuggestion(937080002674040952, test_server=True),
     937500000391413880: SharePics(937500000391413880,       test_server=True),
 }

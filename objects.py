@@ -75,6 +75,9 @@ website_domains = {
 }
 
 
+share_song_reactions = [ReactionType.FIRE, ReactionType.YES, ReactionType.MAYBE, ReactionType.NO]
+
+
 emoji_ids_per_server = {
 	# REAL
 	924350783892389939 : {

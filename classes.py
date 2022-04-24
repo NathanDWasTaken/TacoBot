@@ -1,12 +1,11 @@
-from urllib.parse   import urlparse
-from typing         import List, Set
+from typing         import Dict, List, Set
 from pytube         import YouTube
 
 from discord        import Message, Attachment, NotFound
 
 
-from misc           import add_to_playlist, add_values, fetch_songs_from_playlists, load_json, parse_url, path_exists, save_json, scold_user, get_spotify_title, standard_reply, scold_user, sp
-from enums          import MessageType, WebsiteType
+from misc           import get_website_type, add_to_playlist, add_values, fetch_songs_from_playlists, load_json, parse_url, path_exists, save_json, scold_user, get_spotify_title, standard_reply, scold_user, sp
+from objects        import MessageType, MyEmoji, ReactionType, WebsiteType, emoji_ids_per_server
 import config
 
 
@@ -18,27 +17,6 @@ class ShareMessage:
     """
     message_type:   MessageType     = MessageType.Normal
     delete:         bool            = False
-
-
-
-
-
-website_domains = {
-    "youtu.be"          : WebsiteType.YouTube,
-    "youtube.com"       : WebsiteType.YouTube,
-
-    "open.spotify.com"  : WebsiteType.Spotify,
-    "spotify.com"       : WebsiteType.Spotify,
-}
-
-
-def get_website_type(url):
-    hostname = urlparse(url.replace("www.", "")).hostname
-
-    if hostname in website_domains:
-        return website_domains[hostname]
-
-    return WebsiteType.Other
 
 
 
@@ -87,16 +65,19 @@ class ThreadChannel:
     Banned Messages: None
     """
     # Message types where we create threads
-    thread_messages:    Set[MessageType]    = {*MessageType}
+    thread_messages:    Set[MessageType]                        = {*MessageType}
 
     # Message types that are banned in that channel and have to be removed
-    banned_messages:    Set[MessageType]    = {}
+    banned_messages:    Set[MessageType]                        = {}
+
+    # Message types that 
+    reaction_messages:  Dict[MessageType, List[ReactionType]]    = {}
 
     # urls that are allowed
-    allowed_websites:   Set[WebsiteType]    = {*WebsiteType}
+    allowed_websites:   Set[WebsiteType]                        = {*WebsiteType}
 
     # files that are allowed
-    allowed_files:      Set[str]            = {"audio", "video"}
+    allowed_files:      Set[str]                                = {"audio", "video"}
 
 
     # Whether banned messages should get all the elements not in thread_messages
@@ -106,8 +87,11 @@ class ThreadChannel:
 
 
 
-    def __init__(self, channel_id, test_server=False, thread_msgs=None, banned_msgs=None, allowed_sites=None) -> None:
+    def __init__(self, channel_id, test_server=False, reaction_messages=None, thread_msgs=None, banned_msgs=None, allowed_sites=None) -> None:
         self.id = channel_id
+
+        if reaction_messages is not None:
+            self.reaction_messages  = reaction_messages
 
         if thread_msgs is not None:
             self.thread_messages    = thread_msgs
@@ -170,6 +154,27 @@ class ThreadChannel:
                 await scold_user(message, f"Cannot send {share_msg.message_type.name} messages in this channel", True)
 
             return
+
+
+        # Check if we need to make a reaction
+        reactions_to_add = None
+
+        for msg_type in [share_msg.message_type, MessageType.Any]:
+            if msg_type in self.reaction_messages:
+                reactions_to_add = self.reaction_messages[msg_type]
+                break
+
+        if reactions_to_add is not None:
+            # set of reactions this message has
+            existing_reactions_ids = set(reaction.emoji.id for reaction in message.reactions)
+
+            # loop over all reactions to be added
+            for emoji_type in reactions_to_add:
+                emoji: MyEmoji = emoji_ids_per_server[message.guild.id][emoji_type]
+
+                # add reaction if this message does not have this particular reaction
+                if emoji.id not in existing_reactions_ids:
+                    await message.add_reaction(emoji.full_id)                    
 
 
         # If the message type is not supposed to create a thread, we skip
@@ -331,6 +336,7 @@ class ShareSuggestion(ThreadChannel):
     banned_msgs_opposite = True
 
 
+
 class SharePics(ThreadChannel):
     thread_messages     = {MessageType.File, MessageType.Url}
 
@@ -341,8 +347,8 @@ class SharePics(ThreadChannel):
 
 
 
-# Key:      discord server ID
-# Value:    list of channels
+# Key:      discord channel ID
+# Value:    channel
 thread_channels = {
     # Main discord server
     924352019026833498: ShareMedia(924352019026833498),
@@ -352,7 +358,7 @@ thread_channels = {
     935922814869987388: ThreadChannel(935922814869987388),
 
     # Test discord server
-    927704530903261265: ShareMedia(927704530903261265,      test_server=True),
+    927704530903261265: ShareMedia(927704530903261265,      test_server=True, reaction_messages={MessageType.Any : [ReactionType.FIRE, ReactionType.YES, ReactionType.MAYBE, ReactionType.NO]}),
     937080002674040952: ShareSuggestion(937080002674040952, test_server=True),
     937500000391413880: SharePics(937500000391413880,       test_server=True),
 }

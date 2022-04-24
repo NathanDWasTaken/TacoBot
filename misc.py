@@ -1,11 +1,12 @@
 import os, time, json, re, pickle
+from urllib.parse       import urlparse
 
 import spotipy
 from spotipy.oauth2     import SpotifyOAuth
 from discord.message    import Message
 from typing             import List
 
-from enums              import WebsiteType
+from objects            import WebsiteType, website_domains
 import config
 
 
@@ -44,6 +45,15 @@ def parse_url(txt):
 
     if matched_url:
         return matched_url.group(0)
+
+
+def get_website_type(url):
+    hostname = urlparse(url.replace("www.", "")).hostname
+
+    if hostname in website_domains:
+        return website_domains[hostname]
+
+    return WebsiteType.Other
 
 
 def add_values(d: dict, keys: list, value):

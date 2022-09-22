@@ -3,3 +3,4 @@ pytube
 spotipy
 python-dotenv
 google-api-python-client
+py-cord

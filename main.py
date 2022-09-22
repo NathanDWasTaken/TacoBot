@@ -1,4 +1,4 @@
-from discord        import Message, RawMessageDeleteEvent, TextChannel, Thread
+from discord        import Message, RawMessageDeleteEvent, TextChannel, Thread, Intents
 from discord.ext    import commands
 
 
@@ -27,10 +27,11 @@ def handle_command(message: Message):
 
     # send back Invalid command message
 
+# Have to specify Intents
+intents                 = Intents.default()
+intents.message_content = True
 
-
-bot = commands.Bot(command_prefix=config.command_prefix, max_messages=2000)
-
+bot = commands.Bot(command_prefix=config.command_prefix, max_messages=2000, intents=intents)
     
 @bot.event
 async def on_ready():

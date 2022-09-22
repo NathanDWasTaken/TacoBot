@@ -99,7 +99,7 @@ async def on_ready():
     for songID, (website, playlistItemID) in thread_channel.playlist_songs.items():
         # If song is in playlist but not local (which means also not in discord since the databases have been synced)
         if not path_exists(shared_songs_by_songID, [channel_id, songID]):
-            rem_from_playlist(website, playlistItemID, song_id=songID)
+            rem_from_playlist(website, songID, playlistItemID)
 
 
     print(f'{bot.user} Successfully Synced!!')
@@ -155,9 +155,9 @@ async def on_raw_message_delete(payload: RawMessageDeleteEvent):
 
             # Which also means we should remove the song from the playlist
             website_name, playlistItemID = playlist_items_by_songID[channel_id][song_id]
-            website = WebsiteType(website_name)
-
-            rem_from_playlist(website, playlistItemID, song_id)
+            website = WebsiteType(website_name.lower())
+            
+            rem_from_playlist(website, song_id, playlistItemID)
 
             del shared_songs_by_songID[channel_id][song_id]
             del playlist_items_by_songID[channel_id][song_id]

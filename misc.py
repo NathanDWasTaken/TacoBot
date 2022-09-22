@@ -266,17 +266,12 @@ def add_to_playlist(song_id: str, channel_id: str, website: WebsiteType):
         return False
 
 
-def rem_from_playlist(website: WebsiteType, playlistItemID, song_id=None):
+def rem_from_playlist(website: WebsiteType, songID=None, playlistItemID=None):
     if website == WebsiteType.YouTube:
         _yt_channel.playlistItems().delete(id = playlistItemID).execute()
 
     elif website == WebsiteType.Spotify:
-        track_uri = sp.track(track_id=song_id)["uri"]
-
-        sp.playlist_remove_specific_occurrences_of_items(
-            playlist_id = config.spotify_playlist_id,
-            items       = [{"uri" : track_uri, "positions" : [playlistItemID]}]
-        )
+        sp.playlist_remove_all_occurrences_of_items(playlist_id=config.spotify_playlist_id, items=[songID])
 
 
     else:
@@ -322,7 +317,7 @@ def fetch_songs_from_playlists(rem_duplicates=True):
             if videoID in playlistItems:
 
                 if rem_duplicates:
-                    rem_from_playlist(WebsiteType.YouTube, playlistItemID)
+                    rem_from_playlist(WebsiteType.YouTube, playlistItemID=playlistItemID)
 
                 continue
 
@@ -346,18 +341,16 @@ def fetch_songs_from_playlists(rem_duplicates=True):
         for index, item in enumerate(tracks["items"]):
             trackID = item["track"]["id"]
 
-            track_index = offset + index
-
             if trackID in playlistItems:
                 # The track is already in this dict it means there are duplicated -> remove them
 
                 if rem_duplicates:
-                    rem_from_playlist(WebsiteType.Spotify, track_index, trackID)
+                    rem_from_playlist(WebsiteType.Spotify, songID=trackID)
                     offset -= 1
 
                 continue
 
-            playlistItems[trackID] = [WebsiteType.Spotify, track_index]
+            playlistItems[trackID] = [WebsiteType.Spotify, None]
 
         offset += config.spotify_request_size
         sp_next = tracks["next"]

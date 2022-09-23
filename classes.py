@@ -314,7 +314,9 @@ class ThreadChannel:
         
         # For some reason message.channel.get_thread seems to always return None
         # When I create the thread in a try/except block the code is stuck there for a very long time
-        if not syncing:
+
+        #check if thread already exists:
+        if message.thread is None:
             await message.create_thread(name=thread_title)
 
 

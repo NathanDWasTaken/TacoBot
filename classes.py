@@ -5,7 +5,7 @@ from discord        import Message, Attachment, NotFound
 
 
 from misc           import get_website_type, add_to_playlist, add_values, fetch_songs_from_playlists, load_json, parse_url, path_exists, save_json, scold_user, get_spotify_title, standard_reply, scold_user, sp
-from objects        import MessageType, MyEmoji, ReactionType, WebsiteType, emoji_ids_per_server, share_song_reactions
+from objects        import MessageType, MyEmoji, ReactionType, WebsiteType, emoji_ids_per_server, share_song_reactions, yes_no
 import config
 
 
@@ -364,11 +364,13 @@ thread_channels = [
     SharePics(932736792443092992),
     ShareSuggestion(927726978948296715),
     ThreadChannel(935922814869987388),
+    ShareSuggestion(1024589616164114452,    reaction_messages={MessageType.Any : yes_no}),
 
     # Test discord server
     ShareMedia(927704530903261265,          test_server=True,   reaction_messages={MessageType.Any : share_song_reactions}),
     ShareSuggestion(937080002674040952,     test_server=True),
     SharePics(937500000391413880,           test_server=True),
+    ShareSuggestion(1024622496177205308,    test_server=True,   reaction_messages={MessageType.Any : yes_no}),
 ]
 
 

@@ -90,8 +90,9 @@ website_domains = {
 }
 
 
-share_song_reactions = [ReactionType.FIRE, ReactionType.YES, ReactionType.MAYBE, ReactionType.NO]
-
+share_song_reactions 	= [ReactionType.FIRE, ReactionType.YES, ReactionType.MAYBE, ReactionType.NO]
+yes_maybe_no			= [ReactionType.YES, ReactionType.MAYBE, ReactionType.NO]
+yes_no					= [ReactionType.YES, ReactionType.NO]
 
 emoji_ids_per_server = {
 	# REAL

@@ -357,16 +357,19 @@ class SharePics(ThreadChannel):
 
 # Key:      discord channel ID
 # Value:    channel
-thread_channels = {
+thread_channels = [
     # Main discord server
-    924352019026833498: ShareMedia(924352019026833498,  reaction_messages={MessageType.Any : share_song_reactions}),
-    933058673872367737: SharePics(933058673872367737),
-    932736792443092992: SharePics(932736792443092992),
-    927726978948296715: ShareSuggestion(927726978948296715),
-    935922814869987388: ThreadChannel(935922814869987388),
+    ShareMedia(924352019026833498,          reaction_messages={MessageType.Any : share_song_reactions}),
+    SharePics(933058673872367737),
+    SharePics(932736792443092992),
+    ShareSuggestion(927726978948296715),
+    ThreadChannel(935922814869987388),
 
     # Test discord server
-    927704530903261265: ShareMedia(927704530903261265,      test_server=True, reaction_messages={MessageType.Any : share_song_reactions}),
-    937080002674040952: ShareSuggestion(937080002674040952, test_server=True),
-    937500000391413880: SharePics(937500000391413880,       test_server=True),
-}
+    ShareMedia(927704530903261265,          test_server=True,   reaction_messages={MessageType.Any : share_song_reactions}),
+    ShareSuggestion(937080002674040952,     test_server=True),
+    SharePics(937500000391413880,           test_server=True),
+]
+
+
+thread_channels_dict = {channel.id : channel for channel in thread_channels}

@@ -3,7 +3,7 @@ from discord.ext    import commands
 
 
 from misc           import get_api_key, load_json, path_exists, save_json, rem_from_playlist
-from classes        import ThreadChannel, WebsiteType, thread_channels
+from classes        import ThreadChannel, WebsiteType, thread_channels_dict
 import config
 
 
@@ -14,6 +14,9 @@ def test_bot():
     """
     # TODO
     pass
+
+
+print("Starting TacoBot...")
 
 
 def handle_command(message: Message):
@@ -39,7 +42,7 @@ async def on_ready():
 
     
     channel_id      = str(channel.id)
-    thread_channel: ThreadChannel = thread_channels[channel.id]
+    thread_channel: ThreadChannel = thread_channels_dict[channel.id]
     
     # --------------------------- SYNC MESSAGES ---------------------------
     # This part of the code goes through all messages in the channel and adds the songs to the local database here as well as the playlists (currently only youtube)
@@ -108,7 +111,7 @@ async def on_ready():
 @bot.event
 async def on_message(message: Message):
     if message.author == bot.user:
-        if message.is_system() and message.type.name == "thread_created" and message.channel.id in thread_channels:
+        if message.is_system() and message.type.name == "thread_created" and message.channel.id in thread_channels_dict:
             await message.delete()
 
         return
@@ -119,11 +122,11 @@ async def on_message(message: Message):
         return
 
 
-    if message.channel.id not in thread_channels:
+    if message.channel.id not in thread_channels_dict:
         return
 
 
-    thread_channel: ThreadChannel = thread_channels[message.channel.id]
+    thread_channel: ThreadChannel = thread_channels_dict[message.channel.id]
 
     await thread_channel.moderate_channel(message)
 
@@ -137,13 +140,13 @@ async def on_raw_message_delete(payload: RawMessageDeleteEvent):
     channel_id  = str(payload.channel_id)
     msg_id      = str(payload.message_id)
 
-    if int(channel_id) not in thread_channels:
+    if int(channel_id) not in thread_channels_dict:
         return
 
     shared_songs_by_songID = load_json(config.shared_songs_by_songID)
     shared_songs_by_msgID  = load_json(config.shared_songs_by_msgID)
 
-    if msg_id in shared_songs_by_msgID[channel_id]:
+    if channel_id in shared_songs_by_msgID and msg_id in shared_songs_by_msgID[channel_id]:
         song_id = shared_songs_by_msgID[channel_id][msg_id]
 
         shared_songs_by_songID[channel_id][song_id].remove(msg_id)

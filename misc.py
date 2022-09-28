@@ -179,6 +179,7 @@ sp = spotipy.Spotify(
         client_id       = config.spotify_client_id,
         client_secret   = config.spotify_key,
         scope           = config.spotify_scopes,
+        cache_path      = config.spotify_cache_path,
         redirect_uri    = "http://localhost:8040/",
         open_browser    = False
     )

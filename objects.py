@@ -1,4 +1,4 @@
-from enum import Enum
+from enum 	import Enum
 
 # We need to use this since (int|str) only works in 3.10 up
 from typing import Union
@@ -49,10 +49,10 @@ class ReactionType(Enum):
 class MyEmoji:
 	# id is either an id to a custom emoji or a unicode emoji
 	# The reason it can also be a unicode emoji is so that we can simply compare this emoji's ID with any reactions a message has
-	id: Union[int, str]
+	id: 	Union[int, str]
 
 	# Name of the emoji in case it's a custom emoji, or None in case it's a unicode emoji
-	name: Union[str, None]
+	name: 	Union[str, None]
 
 	def __init__(self, id, name=None, animated=False) -> None:
 		self.id 		= id
@@ -94,6 +94,7 @@ share_song_reactions 	= [ReactionType.FIRE, ReactionType.YES, ReactionType.MAYBE
 yes_maybe_no			= [ReactionType.YES, ReactionType.MAYBE, ReactionType.NO]
 yes_no					= [ReactionType.YES, ReactionType.NO]
 
+# In order to react with custom emojis, the emoji needs to be on the server where the bot reacts. So each emoji has it's own emoji ID for each server
 emoji_ids_per_server = {
 	# REAL
 	924350783892389939 : {

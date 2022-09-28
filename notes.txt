@@ -1,14 +1,5 @@
-- Playlist:
-    - Can now add a youtube and spotify song to a playlist and stores it in playlist_items_by_songID
-    - Removes song from playlist if there is not a single message in the channel that has the song
-    - Can now update the playlist and local databases from past shared messages using "update playlists and databases.py"
-    - Can go over all songs in a playlist and checks whether those are still shared in the channel
-
-- Sync
-    - Threads (getting older threads currently broken)
-        - Creates Threads for older valid messages when syncing
-        - Have bot go over all threads in the channel and remove any that don't have a message anymore
-
+- Database class
+    - rather than having both local variables and the saved json database, create class which handles this
 
 - Think of a way to automate testing
     - How do we test? Do we check whether all messages have threads?

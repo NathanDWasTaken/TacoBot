@@ -70,14 +70,14 @@ class ThreadChannel:
     # Message types that are banned in that channel and have to be removed
     banned_messages:    Set[MessageType]                        = {}
 
-    # Message types that 
+    # Message types that get a reaction
     reaction_messages:  Dict[MessageType, List[ReactionType]]    = {}
 
     # urls that are allowed
     allowed_websites:   Set[WebsiteType]                        = {*WebsiteType}
 
     # files that are allowed
-    allowed_files:      Set[str]                                = {"audio", "video"}
+    allowed_files:      Set[str]                                = {"audio", "video", "image"}
 
 
     # Whether banned messages should get all the elements not in thread_messages
@@ -325,7 +325,7 @@ class ThreadChannel:
 
 class ShareMedia(ThreadChannel):
     """
-    Channel where you're supposed to share music (only urls to correct sites)
+    Channel where you're supposed to share music (only urls to supported sites and files (audio, video) )
     """
 
     thread_messages     = {MessageType.Url, MessageType.File}

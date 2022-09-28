@@ -23,6 +23,7 @@ data_folder         = join(file_folder, "data")
 env_file            = join(secrets_folder, env_filename)
 load_dotenv(env_file)
 
+spotify_cache_path          = join(secrets_folder, spotify_cache_filename)
 
 shared_songs_by_songID      = join(data_folder, shared_songs_by_songID_filename)
 shared_songs_by_msgID       = join(data_folder, shared_songs_by_msgID_filename)

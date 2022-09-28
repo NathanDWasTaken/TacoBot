@@ -7,6 +7,8 @@ testing                 = False
 
 env_filename            = "secrets.env"
 
+spotify_cache_filename  = ".spotipyoauthcache"
+
 # Stores the shared songs where the last key is the song ID
 shared_songs_by_songID_filename    = "shared_songs_by_songID.json"
 

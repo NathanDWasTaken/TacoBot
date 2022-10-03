@@ -53,5 +53,7 @@ yt_cred_file = join(secrets_folder, _yt_cred_filename)
 
 
 # ---------------------------- API STUFF ----------------------------
-spotify_client_id   = os.getenv("SPOTIFY_API_CLIENT_ID")
-spotify_key         = os.getenv("SPOTIFY_API_KEY")
+spotify_client_id       = os.getenv("SPOTIFY_API_CLIENT_ID")
+spotify_client_secret   = os.getenv("SPOTIFY_API_KEY")
+
+spotify_redirect_uri    = f"http://localhost:{spotify_redirect_port}",

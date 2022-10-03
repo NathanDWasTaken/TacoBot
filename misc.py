@@ -177,10 +177,10 @@ async def scold_user(message: Message, reply_text, delete=True):
 sp = spotipy.Spotify(
     auth_manager=SpotifyOAuth(
         client_id       = config.spotify_client_id,
-        client_secret   = config.spotify_key,
+        client_secret   = config.spotify_client_secret,
         scope           = config.spotify_scopes,
         cache_path      = config.spotify_cache_path,
-        redirect_uri    = "http://localhost:8040/",
+        redirect_uri    = config.spotify_redirect_port,
         open_browser    = False
     )
 )
@@ -335,7 +335,7 @@ def fetch_songs_from_playlists(rem_duplicates=True):
             user        = config.spotify_client_id, 
             limit       = config.spotify_request_size,
             playlist_id = config.spotify_playlist_id,
-            offset      = offset
+            offset      = offset,
         )
 
 

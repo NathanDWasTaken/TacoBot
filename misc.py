@@ -180,7 +180,7 @@ sp = spotipy.Spotify(
         client_secret   = config.spotify_client_secret,
         scope           = config.spotify_scopes,
         cache_path      = config.spotify_cache_path,
-        redirect_uri    = config.spotify_redirect_port,
+        redirect_uri    = config.spotify_redirect_uri,
         open_browser    = False
     )
 )
@@ -339,7 +339,7 @@ def fetch_songs_from_playlists(rem_duplicates=True):
         )
 
 
-        for index, item in enumerate(tracks["items"]):
+        for item in tracks["items"]:
             trackID = item["track"]["id"]
 
             if trackID in playlistItems:

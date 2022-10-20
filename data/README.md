@@ -5,7 +5,7 @@ This file serves to explain and document the purposes of the following json file
 
 \<Message ID> : ID of the discord message
 
-\<Server ID> : ID of the discord guild/server
+\<Channel ID> : ID of the discord channel
 
 \<Song ID> : ID of the song, be it on spotify, youtube or a different site
 
@@ -31,7 +31,7 @@ Stores all the messages that have shared a song. Is useful because it keeps trac
 
 ```
 {
-    <Server ID> : {
+    <Channel ID> : {
         <Song ID> : [<Message ID>]
     }
 }
@@ -43,6 +43,8 @@ Stores all the songs that have been added to a playlist. This is needed to remov
 
 ```
 {
-    <Song ID> : [<Website Type>, <PlaylistItem ID>]
+    <Channel ID> : {
+        <Song ID> : [<Website Type>, <PlaylistItem ID>]
+    }
 }
 ```

@@ -28,6 +28,7 @@ spotify_cache_path          = join(secrets_folder, spotify_cache_filename)
 shared_songs_by_songID      = join(data_folder, shared_songs_by_songID_filename)
 shared_songs_by_msgID       = join(data_folder, shared_songs_by_msgID_filename)
 playlist_items_by_songID    = join(data_folder, playlist_items_by_songID_filename)
+playlistSongs               = join(data_folder, playlistSongs_filename)
 
 
 # Take Youtube ID and the User credentials depending on if we're testing or not (2 different youtube accounts for testing and normal)
@@ -56,4 +57,4 @@ yt_cred_file = join(secrets_folder, _yt_cred_filename)
 spotify_client_id       = os.getenv("SPOTIFY_API_CLIENT_ID")
 spotify_client_secret   = os.getenv("SPOTIFY_API_KEY")
 
-spotify_redirect_uri    = f"http://192.168.0.69:{spotify_redirect_port}",
+spotify_redirect_uri    = f"http://192.168.0.69:{spotify_redirect_port}"

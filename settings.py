@@ -19,6 +19,8 @@ shared_songs_by_msgID_filename     = "shared_songs_by_msgID.json"
 # Stores all the songs that have been added to a playlist. 
 playlist_items_by_songID_filename  = "playlist_items_by_songID.json"
 
+# Stores all the data
+playlistSongs_filename              = "playlistSongs.json"
 
 # ID of the test discord server
 test_server_id          = 927704499194310717

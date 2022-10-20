@@ -1,8 +1,9 @@
 from discord        import Message, RawMessageDeleteEvent, TextChannel, Thread, Intents
 from discord.ext    import commands
 
-
-from misc           import get_api_key, load_json, path_exists, save_json, rem_from_playlist
+from database       import PlaylistSongs
+from misc           import get_api_key, path_exists, rem_from_playlist
+from natlib         import load_json, save_json
 from classes        import ThreadChannel, WebsiteType, thread_channels_dict
 import config
 
@@ -29,6 +30,9 @@ def handle_command(message: Message):
 
 
     # send back Invalid command message
+
+playlistSongs = PlaylistSongs(config.playlistSongs)
+
 
 # Have to specify Intents
 intents                 = Intents.default()

@@ -6,36 +6,10 @@ from spotipy.oauth2     import SpotifyOAuth
 from discord.message    import Message
 from typing             import List
 
+from natlib             import MultiDimDict, load_json, save_json
 from objects            import WebsiteType, website_domains
 import config
 
-
-# ---------------------------------- JSON ----------------------------------
-
-
-def load_json(filename, default_return=None):
-    if default_return is None:
-        default_return = {}
-        
-    try:
-        with open(filename, "r") as file:
-            return json.load(file)
-    except (FileNotFoundError, json.decoder.JSONDecodeError):
-        try:
-            raise default_return
-        except TypeError:
-            return default_return
-
-
-
-def save_json(filename, data):
-    path = os.path.split(filename)[0]
-
-    if not os.path.exists(path):
-        os.makedirs(path)
-
-    with open(filename, "w") as file:
-        json.dump(data, file, indent=4)
 
 
 # ---------------------------------- MISC ----------------------------------
@@ -222,7 +196,7 @@ with open(config.yt_cred_file, "rb") as file:
 
 
 def add_to_playlist(song_id: str, channel_id: str, website: WebsiteType):
-    playlist_items_by_songID    = load_json(config.playlist_items_by_songID)
+    playlist_items_by_songID    = load_json(config.playlist_items_by_songID, dict_type=MultiDimDict)
 
     try:
         if song_id not in playlist_items_by_songID[channel_id]:

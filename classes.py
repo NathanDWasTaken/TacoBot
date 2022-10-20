@@ -4,7 +4,8 @@ from pytube         import YouTube
 from discord        import Message, Attachment, NotFound
 
 
-from misc           import get_website_type, add_to_playlist, add_values, fetch_songs_from_playlists, load_json, parse_url, path_exists, save_json, scold_user, get_spotify_title, standard_reply, scold_user, sp
+from misc           import get_website_type, add_to_playlist, add_values, fetch_songs_from_playlists, parse_url, path_exists, scold_user, get_spotify_title, standard_reply, scold_user, sp
+from natlib         import load_json, save_json
 from objects        import MessageType, MyEmoji, ReactionType, WebsiteType, emoji_ids_per_server, share_song_reactions, yes_no
 import config
 
@@ -83,7 +84,8 @@ class ThreadChannel:
     # Whether banned messages should get all the elements not in thread_messages
     banned_msgs_opposite: bool              = False
 
-    
+
+    playlist_songs: Dict
 
 
 
@@ -357,7 +359,7 @@ class SharePics(ThreadChannel):
 
 # Key:      discord channel ID
 # Value:    channel
-thread_channels = [
+thread_channels: List[ThreadChannel] = [
     # Main discord server
     ShareMedia(924352019026833498,          reaction_messages={MessageType.Any : share_song_reactions}),
     SharePics(933058673872367737),

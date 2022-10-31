@@ -1,4 +1,3 @@
-aiohttp
 pytube
 spotipy
 python-dotenv

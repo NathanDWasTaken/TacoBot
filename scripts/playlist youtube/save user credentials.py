@@ -101,8 +101,10 @@ if __name__ == '__main__':
     with open(credentials_file, "wb") as file:
         pickle.dump(youtube, file)
 
-    with open(credentials_file, "rb") as file:
-        youtube = pickle.load(file)
 
-    test = add_video_to_playlist(youtube, "r-SurvChGFk", playlist_id)
-    print()
+    # test loading credentials and adding song to playlist
+    # with open(credentials_file, "rb") as file:
+    #     youtube = pickle.load(file)
+
+    # test = add_video_to_playlist(youtube, "r-SurvChGFk", playlist_id)
+    # print()
